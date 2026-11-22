@@ -1,6 +1,6 @@
 
 Biểu tượng HTML
-index
+index-v2
 
 <!DOCTYPE html>
 <html lang="vi">
@@ -93,13 +93,17 @@ index
     }
 
     #ytPlayer { width: 100%; height: 100%; display: block; }
+    /* Ngăn iframe YouTube cướp cảm ứng khi đang kéo thả phụ đề */
+    .video-wrapper.dragging-sub #ytPlayer {
+      pointer-events: none !important;
+    }
 
     /* Nhãn tên nhân vật */
     .speaker-badge {
       display: inline-block;
-      background: rgba(255, 152, 0, 0.2);
+      background: rgba(255, 152, 0, 0.22);
       color: #ffcc80;
-      border: 1px solid rgba(255, 183, 77, 0.32);
+      border: 1px solid rgba(255, 183, 77, 0.35);
       font-size: 10px;
       font-weight: 700;
       padding: 1px 6px;
@@ -129,28 +133,34 @@ index
       color: #ffeb3b;
     }
 
-    /* --- CHẾ ĐỘ PHỤ ĐỀ 1: NẰM NGANG Ở ĐÁY VIDEO (NỀN MỜ NHẸ, CHỮ GỌN) --- */
+    /* --- CHẾ ĐỘ PHỤ ĐỀ 1: NẰM NGANG (NỀN ĐEN TRONG SUỐT, KHÔNG BLUR, KÉO THẢ TỰ DO) --- */
     .subtitle-overlay.mode-horizontal {
       position: absolute;
       bottom: 46px;
       left: 50%;
       transform: translateX(-50%);
-      width: 94%;
+      width: max-content;
+      max-width: 92%;
       text-align: center;
-      pointer-events: none;
+      pointer-events: auto;
+      touch-action: none;
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
       z-index: 20;
+    }
+    .subtitle-overlay.mode-horizontal:active {
+      cursor: grabbing;
     }
     .subtitle-overlay.mode-horizontal .subtitle-box {
       display: inline-block;
-      background: rgba(0, 0, 0, 0.34);
-      backdrop-filter: blur(3px);
-      -webkit-backdrop-filter: blur(3px);
-      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(0, 0, 0, 0.36);
+      border: 1px solid rgba(255, 255, 255, 0.16);
       padding: 5px 12px;
       border-radius: 8px;
       line-height: 1.38;
       max-width: 100%;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.92), 0 0 6px rgba(0, 0, 0, 0.75);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 6px rgba(0, 0, 0, 0.8);
     }
     .subtitle-overlay.mode-horizontal .subtitle-box:empty { display: none; }
     .sub-fr { color: #ffffff; font-size: 15.5px; font-weight: 600; }
@@ -163,38 +173,60 @@ index
     .video-wrapper:fullscreen .mode-horizontal .sub-vi,
     .video-wrapper:-webkit-full-screen .mode-horizontal .sub-vi { font-size: 17.5px; }
 
-    /* --- CHẾ ĐỘ PHỤ ĐỀ 2: NẰM DỌC BÊN PHẢI (NỀN TRONG MỜ) --- */
+    /* --- CHẾ ĐỘ PHỤ ĐỀ 2: NẰM DỌC (NỀN ĐEN TRONG SUỐT, KHÔNG BLUR, CÓ THANH KÉO THẢ) --- */
     .subtitle-overlay.mode-vertical {
       position: absolute;
       top: 8px;
       right: 8px;
-      bottom: 46px;
+      height: calc(100% - 54px);
       width: 17%;
       min-width: 135px;
-      background: rgba(12, 12, 12, 0.28);
-      backdrop-filter: blur(2px);
-      -webkit-backdrop-filter: blur(2px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.34);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 8px;
-      padding: 5px;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
       pointer-events: auto;
       z-index: 20;
       text-align: left;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
     }
     .subtitle-overlay.mode-vertical:empty { display: none; }
+
+    .v-drag-handle {
+      flex-shrink: 0;
+      padding: 3px 6px;
+      background: rgba(0, 0, 0, 0.45);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 9.5px;
+      font-weight: 600;
+      text-align: center;
+      letter-spacing: 0.4px;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .v-drag-handle:active {
+      cursor: grabbing;
+      color: #ffeb3b;
+    }
+
+    .v-sub-list {
+      flex: 1;
+      padding: 5px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
 
     .video-wrapper.pseudo-fs .subtitle-overlay.mode-vertical,
     .video-wrapper:fullscreen .subtitle-overlay.mode-vertical,
     .video-wrapper:-webkit-full-screen .subtitle-overlay.mode-vertical {
       width: 12.5%;
       min-width: 120px;
-      top: 10px;
-      right: 10px;
-      bottom: 52px;
-      padding: 6px 5px;
+      height: calc(100% - 62px);
     }
 
     .v-sub-item {
@@ -202,14 +234,14 @@ index
       margin-bottom: 4px;
       border-radius: 5px;
       cursor: pointer;
-      opacity: 0.72;
+      opacity: 0.75;
       border-left: 2px solid transparent;
       transition: background 0.15s, opacity 0.15s;
     }
     .v-sub-item:active { background: rgba(255, 255, 255, 0.12); }
     .v-sub-item.active {
       opacity: 1;
-      background: rgba(255, 235, 59, 0.12);
+      background: rgba(255, 235, 59, 0.14);
       border-left: 2px solid rgba(255, 235, 59, 0.85);
     }
     .v-time {
@@ -259,9 +291,9 @@ index
       right: calc(12.5% + 18px);
     }
     .floating-btn {
-      background: rgba(0, 0, 0, 0.36);
+      background: rgba(0, 0, 0, 0.42);
       color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       padding: 6px 10px;
       font-size: 12px;
       border-radius: 6px;
@@ -350,7 +382,7 @@ index
       <button type="button" class="btn-yellow" id="toggleFsBtn">⛶ Toàn màn hình</button>
     </div>
 
-    <div id="status">Sẵn sàng — Dán link YouTube và bản chép lời ở trên rồi bấm "▶ Phát ngay".</div>
+    <div id="status">Sẵn sàng — Dán link YouTube và bản chép lời ở trên rồi bấm "▶ Phát ngay". (Chạm và kéo khung phụ đề để đặt vị trí tùy ý)</div>
   </div>
 
   <!-- KHUNG PHÁT VIDEO -->
@@ -423,6 +455,12 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     let isPinned = false;
     let lastSavedTime = 0;
 
+    // Lưu vị trí kéo thả tùy chỉnh theo tỷ lệ khung hình (0..1) để tương thích cả toàn màn hình
+    let customSubPos = {
+      horizontal: null, // { leftRatio, topRatio }
+      vertical: null    // { leftRatio, topRatio }
+    };
+
     const videoWrapper = document.getElementById('videoWrapper');
     const subtitleOverlay = document.getElementById('subtitleOverlay');
     const transcriptBox = document.getElementById('transcriptBox');
@@ -432,6 +470,154 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     const pinBtn = document.getElementById('pinBtn');
     const toggleLayoutBtn = document.getElementById('toggleLayoutBtn');
     const floatingLayoutBtn = document.getElementById('floatingLayoutBtn');
+
+    // --- KÉO THẢ DI ĐỘNG KHUNG PHỤ ĐỀ (CẢ CẢM ỨNG IPAD & CHUỘT) ---
+    let dragState = null;
+    let lastTapTime = 0;
+
+    function resetOverlayInlinePosition() {
+      subtitleOverlay.style.left = '';
+      subtitleOverlay.style.top = '';
+      subtitleOverlay.style.right = '';
+      subtitleOverlay.style.bottom = '';
+      subtitleOverlay.style.transform = '';
+    }
+
+    function applySavedOverlayPosition() {
+      const pos = customSubPos[subLayout];
+      if (!pos) {
+        resetOverlayInlinePosition();
+        if (subLayout === 'vertical') {
+          videoWrapper.classList.add('has-vertical-sub');
+        }
+        return;
+      }
+
+      const wrapRect = videoWrapper.getBoundingClientRect();
+      const ovRect = subtitleOverlay.getBoundingClientRect();
+      if (!wrapRect.width || !wrapRect.height) return;
+
+      const maxLeft = Math.max(4, wrapRect.width - ovRect.width - 4);
+      const maxTop = Math.max(4, wrapRect.height - ovRect.height - 4);
+      const clampedLeft = Math.min(maxLeft, Math.max(4, pos.leftRatio * wrapRect.width));
+      const clampedTop = Math.min(maxTop, Math.max(4, pos.topRatio * wrapRect.height));
+
+      subtitleOverlay.style.left = clampedLeft + 'px';
+      subtitleOverlay.style.top = clampedTop + 'px';
+      subtitleOverlay.style.right = 'auto';
+      subtitleOverlay.style.bottom = 'auto';
+      subtitleOverlay.style.transform = 'none';
+
+      if (subLayout === 'vertical') {
+        videoWrapper.classList.remove('has-vertical-sub');
+      }
+    }
+
+    function clampOverlayInBounds() {
+      if (!customSubPos[subLayout]) return;
+      applySavedOverlayPosition();
+    }
+
+    function getClientPoint(e) {
+      if (e.touches && e.touches.length > 0) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+      if (e.changedTouches && e.changedTouches.length > 0) {
+        return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+      }
+      return { x: e.clientX, y: e.clientY };
+    }
+
+    function startSubDrag(e) {
+      // Ở chế độ ngang: chạm bất kỳ đâu trên hộp phụ đề đều kéo được
+      // Ở chế độ dọc: chạm vào thanh nắm ".v-drag-handle" ở đầu khung để kéo (vẫn giữ cuộn & bấm câu bên dưới)
+      if (subLayout === 'horizontal') {
+        if (!e.target.closest('#subtitleOverlay')) return;
+      } else {
+        if (!e.target.closest('.v-drag-handle')) return;
+      }
+
+      // Chạm đúp (double-tap / double-click) để đưa phụ đề về vị trí mặc định ban đầu
+      const now = Date.now();
+      if (now - lastTapTime < 300) {
+        lastTapTime = 0;
+        customSubPos[subLayout] = null;
+        applySavedOverlayPosition();
+        if (isPinned) savePinnedSession();
+        e.preventDefault();
+        return;
+      }
+      lastTapTime = now;
+
+      const pt = getClientPoint(e);
+      const wrapRect = videoWrapper.getBoundingClientRect();
+      const ovRect = subtitleOverlay.getBoundingClientRect();
+
+      dragState = {
+        startX: pt.x,
+        startY: pt.y,
+        origLeft: ovRect.left - wrapRect.left,
+        origTop: ovRect.top - wrapRect.top,
+        moved: false
+      };
+
+      videoWrapper.classList.add('dragging-sub');
+      if (e.cancelable) e.preventDefault();
+    }
+
+    function onSubDragMove(e) {
+      if (!dragState) return;
+      const pt = getClientPoint(e);
+      const dx = pt.x - dragState.startX;
+      const dy = pt.y - dragState.startY;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) dragState.moved = true;
+
+      const wrapRect = videoWrapper.getBoundingClientRect();
+      const ovRect = subtitleOverlay.getBoundingClientRect();
+      const maxLeft = Math.max(4, wrapRect.width - ovRect.width - 4);
+      const maxTop = Math.max(4, wrapRect.height - ovRect.height - 4);
+
+      const newLeft = Math.min(maxLeft, Math.max(4, dragState.origLeft + dx));
+      const newTop = Math.min(maxTop, Math.max(4, dragState.origTop + dy));
+
+      subtitleOverlay.style.left = newLeft + 'px';
+      subtitleOverlay.style.top = newTop + 'px';
+      subtitleOverlay.style.right = 'auto';
+      subtitleOverlay.style.bottom = 'auto';
+      subtitleOverlay.style.transform = 'none';
+
+      if (subLayout === 'vertical') {
+        videoWrapper.classList.remove('has-vertical-sub');
+      }
+
+      if (wrapRect.width > 0 && wrapRect.height > 0) {
+        customSubPos[subLayout] = {
+          leftRatio: newLeft / wrapRect.width,
+          topRatio: newTop / wrapRect.height
+        };
+      }
+
+      if (e.cancelable) e.preventDefault();
+    }
+
+    function endSubDrag() {
+      if (!dragState) return;
+      const wasMoved = dragState.moved;
+      dragState = null;
+      videoWrapper.classList.remove('dragging-sub');
+      if (wasMoved && isPinned) {
+        savePinnedSession();
+      }
+    }
+
+    subtitleOverlay.addEventListener('touchstart', startSubDrag, { passive: false });
+    subtitleOverlay.addEventListener('mousedown', startSubDrag);
+    window.addEventListener('touchmove', onSubDragMove, { passive: false });
+    window.addEventListener('mousemove', onSubDragMove);
+    window.addEventListener('touchend', endSubDrag);
+    window.addEventListener('touchcancel', endSubDrag);
+    window.addEventListener('mouseup', endSubDrag);
+    window.addEventListener('resize', clampOverlayInBounds);
 
     // --- TÍNH NĂNG GHIM VIDEO ĐANG XEM (CHỐNG MẤT KHI THOÁT / RELOAD SAFARI) ---
     function updatePinBtnUI() {
@@ -468,6 +654,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
           subLayout,
           showFr,
           showVi,
+          customSubPos,
           lastTime: lastSavedTime
         };
         localStorage.setItem(PIN_STORAGE_KEY, JSON.stringify(payload));
@@ -492,7 +679,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         isPinned = true;
         savePinnedSession();
         updatePinBtnUI();
-        statusEl.textContent = `📌 Đã ghim video [${currentVideoId}] — thoát ra hay tải lại trang vẫn giữ nguyên video & phụ đề.`;
+        statusEl.textContent = `📌 Đã ghim video [${currentVideoId}] — thoát ra hay tải lại trang vẫn giữ nguyên video, phụ đề & vị trí.`;
       }
     });
 
@@ -522,7 +709,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     }
 
     function parseRawPastedTranscript(rawText) {
-      const text = (rawText || '').replace(/\r/g, '').trim();
+      const text = (rawText || '').replace(/
+/g, '').trim();
       if (!text) return [];
 
       // 1. Định dạng JSON mảng trực tiếp
@@ -542,7 +730,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         } catch {}
       }
 
-      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      const lines = text.split('
+').map(l => l.trim()).filter(Boolean);
 
       // 2. Định dạng từ Userscripts / Bookmarklet: "start|end|text"
       if (lines.length && /^\d+(\.\d+)?\|\d+(\.\d+)?\|/.test(lines[0])) {
@@ -778,7 +967,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       loadYouTubeVideo(vidId, 0);
 
       document.getElementById('inputDrawer').open = false;
-      statusEl.textContent = `▶ Đang phát [${vidId}] (${currentTranscript.length} dòng phụ đề). Bấm "📌 Ghim" nếu muốn giữ lại khi thoát.`;
+      statusEl.textContent = `▶ Đang phát [${vidId}] (${currentTranscript.length} dòng phụ đề). Kéo khung phụ đề để đặt vị trí, bấm "📌 Ghim" để giữ lại.`;
     });
 
     document.getElementById('resetAllBtn').addEventListener('click', () => {
@@ -792,6 +981,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       currentTranscript = [];
       activeIndex = -1;
       activeSubIndex = -1;
+      customSubPos = { horizontal: null, vertical: null };
+      resetOverlayInlinePosition();
       updatePinBtnUI();
       renderOverlayStructure();
       transcriptBox.innerHTML = '';
@@ -805,12 +996,13 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       subtitleOverlay.className = isVert
         ? 'subtitle-overlay mode-vertical'
         : 'subtitle-overlay mode-horizontal';
-      videoWrapper.classList.toggle('has-vertical-sub', isVert);
+      videoWrapper.classList.toggle('has-vertical-sub', isVert && !customSubPos.vertical);
 
       toggleLayoutBtn.textContent = isVert ? '📐 Kiểu PĐ: Dọc' : '📐 Kiểu PĐ: Ngang';
       floatingLayoutBtn.textContent = isVert ? '📐 PĐ: Dọc' : '📐 PĐ: Ngang';
 
       renderOverlayStructure();
+      applySavedOverlayPosition();
       activeIndex = -1;
       activeSubIndex = -1;
       syncSubtitle(true);
@@ -834,6 +1026,16 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       subtitleOverlay.innerHTML = '';
       if (!currentTranscript.length) return;
 
+      const handle = document.createElement('div');
+      handle.className = 'v-drag-handle';
+      handle.title = 'Kéo để di chuyển khung phụ đề (chạm đúp để về góc mặc định)';
+      handle.textContent = '⋮⋮ Kéo vị trí';
+      subtitleOverlay.appendChild(handle);
+
+      const listContainer = document.createElement('div');
+      listContainer.className = 'v-sub-list';
+      listContainer.id = 'vSubList';
+
       currentTranscript.forEach((item, idx) => {
         const fr = item.fr || item.text || '';
         const vi = item.vi || '';
@@ -853,8 +1055,10 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
           const targetTime = kSpan ? Number(kSpan.dataset.start) : item.start;
           seekTo(targetTime);
         };
-        subtitleOverlay.appendChild(row);
+        listContainer.appendChild(row);
       });
+
+      subtitleOverlay.appendChild(listContainer);
     }
 
     // --- BẬT / TẮT PHỤ ĐỀ TỪNG NGÔN NGỮ ---
@@ -894,10 +1098,12 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       if (nativeFs) {
         (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
         videoWrapper.classList.remove('pseudo-fs');
+        requestAnimationFrame(clampOverlayInBounds);
         return;
       }
       if (videoWrapper.classList.contains('pseudo-fs')) {
         videoWrapper.classList.remove('pseudo-fs');
+        requestAnimationFrame(clampOverlayInBounds);
         return;
       }
 
@@ -906,7 +1112,10 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         try {
           const p = reqFs.call(videoWrapper);
           if (p && typeof p.catch === 'function') {
-            p.catch(() => videoWrapper.classList.add('pseudo-fs'));
+            p.catch(() => {
+              videoWrapper.classList.add('pseudo-fs');
+              requestAnimationFrame(clampOverlayInBounds);
+            });
           }
         } catch {
           videoWrapper.classList.add('pseudo-fs');
@@ -914,9 +1123,12 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       } else {
         videoWrapper.classList.add('pseudo-fs');
       }
+      requestAnimationFrame(clampOverlayInBounds);
     }
     document.getElementById('toggleFsBtn').addEventListener('click', toggleFullscreen);
     document.getElementById('floatingFsBtn').addEventListener('click', toggleFullscreen);
+    document.addEventListener('fullscreenchange', () => requestAnimationFrame(clampOverlayInBounds));
+    document.addEventListener('webkitfullscreenchange', () => requestAnimationFrame(clampOverlayInBounds));
 
     // --- TẠO PROMPT AI & ÁP DỤNG BẢN DỊCH ---
     function populateExportBox(vidId, lines) {
@@ -933,8 +1145,11 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       }));
 
       exportBox.value =
-        `${AI_PROMPT}\n` +
-        `Link video: https://www.youtube.com/watch?v=${vidId}\n\n` +
+        `${AI_PROMPT}
+` +
+        `Link video: https://www.youtube.com/watch?v=${vidId}
+
+` +
         JSON.stringify(compactLines, null, 2);
     }
 
@@ -967,7 +1182,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       try {
         parsed = JSON.parse(rawText);
       } catch (err) {
-        alert('Dữ liệu dán vào chưa đúng chuẩn JSON:\n' + err.message);
+        alert('Dữ liệu dán vào chưa đúng chuẩn JSON:
+' + err.message);
         return;
       }
       if (!Array.isArray(parsed) || !parsed.length) {
@@ -1048,6 +1264,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       activeIndex = -1;
       activeSubIndex = -1;
       renderOverlayStructure();
+      applySavedOverlayPosition();
       renderTranscriptList();
       syncSubtitle(true);
       if (isPinned) savePinnedSession();
@@ -1160,16 +1377,18 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
               if (showFr && fr) html += `<div class="sub-fr">${renderKaraokeFrHtml(item)}</div>`;
               if (showVi && vi) html += `<div class="sub-vi">${renderKaraokeViHtml(item)}</div>`;
               box.innerHTML = html;
+              clampOverlayInBounds();
             } else {
               box.innerHTML = '';
             }
           }
         } else if (idx !== -1) {
           const activeVSub = document.getElementById('vsub-' + idx);
-          if (activeVSub) {
+          const vSubList = document.getElementById('vSubList');
+          if (activeVSub && vSubList) {
             activeVSub.classList.add('active');
-            const targetScroll = activeVSub.offsetTop - (subtitleOverlay.clientHeight / 2) + (activeVSub.clientHeight / 2);
-            subtitleOverlay.scrollTo({ top: Math.max(0, targetScroll), behavior: forceRender ? 'auto' : 'smooth' });
+            const targetScroll = activeVSub.offsetTop - (vSubList.clientHeight / 2) + (activeVSub.clientHeight / 2);
+            vSubList.scrollTo({ top: Math.max(0, targetScroll), behavior: forceRender ? 'auto' : 'smooth' });
           }
         }
 
@@ -1211,6 +1430,12 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         subLayout = saved.subLayout || 'horizontal';
         showFr = saved.showFr !== undefined ? saved.showFr : true;
         showVi = saved.showVi !== undefined ? saved.showVi : true;
+        if (saved.customSubPos) {
+          customSubPos = {
+            horizontal: saved.customSubPos.horizontal || null,
+            vertical: saved.customSubPos.vertical || null
+          };
+        }
         lastSavedTime = Number(saved.lastTime) || 0;
 
         document.getElementById('ytUrlInput').value = saved.urlInput || `https://www.youtube.com/watch?v=${currentVideoId}`;
@@ -1235,4 +1460,4 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
 </body>
 </html>
 
-Improving video accessibility
+Storing subtitle position ratios
