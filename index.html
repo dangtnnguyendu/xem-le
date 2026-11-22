@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Xem Lẻ YouTube">
+  <title>Xem Lẻ Video Song Ngữ Pháp - Việt</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 12px 14px 48px;
+      background: #121212;
+      color: #eee;
+    }
+    .panel {
+      background: #1e1e1e;
+      padding: 12px;
+      border-radius: 10px;
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+      font-size: 14px;
+      border: 1px solid #2c2c2c;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    input[type="text"] {
+      flex: 1;
+      min-width: 220px;
+      padding: 10px 12px;
+      background: #2a2a2a;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+    button {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      touch-action: manipulation;
+    }
+    button:active { transform: scale(0.98); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-yellow { background: #ffeb3b; color: #111; }
+    .btn-blue { background: #2196f3; color: #fff; }
+    .btn-teal { background: #00897b; color: #fff; }
+    .btn-green { background: #4caf50; color: #fff; }
+    .btn-gray { background: #383838; color: #eee; }
+    .btn-off { background: #242424; color: #777; border: 1px solid #383838; }
+
+    details {
+      background: #161616;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #2b2b2b;
+      font-size: 13px;
+    }
+    summary { cursor: pointer; color: #ffd54f; font-weight: 600; user-select: none; }
+    .input-grid { display: grid; gap: 10px; margin-top: 10px; }
+
+    /* Khung phát video & chế độ toàn màn hình giữ phụ đề trên iPad */
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .video-wrapper.pseudo-fs,
+    .video-wrapper:fullscreen,
+    .video-wrapper:-webkit-full-screen {
+      position: fixed !important;
+      top: 0; left: 0;
+      width: 100vw !important;
+      height: 100dvh !important;
+      z-index: 99999;
+      border-radius: 0;
+    }
+
+    #ytPlayer { width: 100%; height: 100%; display: block; }
+
+    /* Nhãn tên nhân vật */
+    .speaker-badge {
+      display: inline-block;
+      background: rgba(255, 152, 0, 0.22);
+      color: #ffb74d;
+      border: 1px solid rgba(255, 183, 77, 0.4);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 4px;
+      margin-bottom: 4px;
+      letter-spacing: 0.3px;
+    }
+    .subtitle-overlay.mode-horizontal .speaker-badge {
+      display: block;
+      width: fit-content;
+      margin: 0 auto 4px;
+    }
+    .v-speaker {
+      display: inline-block;
+      color: #ffb74d;
+      font-size: 9.5px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    /* Hiệu ứng Karaoke: Mặc định trắng, đoạn đang nói bôi vàng cả Pháp & Việt */
+    .k-seg {
+      color: #ffffff;
+      transition: color 0.1s ease;
+    }
+    .k-seg.active {
+      color: #ffeb3b;
+    }
+
+    /* --- CHẾ ĐỘ PHỤ ĐỀ 1: NẰM NGANG Ở ĐÁY VIDEO --- */
+    .subtitle-overlay.mode-horizontal {
+      position: absolute;
+      bottom: 54px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 94%;
+      text-align: center;
+      pointer-events: none;
+      z-index: 20;
+    }
+    .subtitle-overlay.mode-horizontal .subtitle-box {
+      display: inline-block;
+      background: rgba(0, 0, 0, 0.84);
+      padding: 8px 16px;
+      border-radius: 8px;
+      line-height: 1.45;
+      max-width: 100%;
+    }
+    .subtitle-overlay.mode-horizontal .subtitle-box:empty { display: none; }
+    .sub-fr { color: #ffffff; font-size: 20px; font-weight: 600; }
+    .sub-vi { color: #ffffff; font-size: 17px; font-weight: 500; margin-top: 4px; }
+
+    .video-wrapper.pseudo-fs .mode-horizontal .sub-fr,
+    .video-wrapper:fullscreen .mode-horizontal .sub-fr,
+    .video-wrapper:-webkit-full-screen .mode-horizontal .sub-fr { font-size: 28px; }
+    .video-wrapper.pseudo-fs .mode-horizontal .sub-vi,
+    .video-wrapper:fullscreen .mode-horizontal .sub-vi,
+    .video-wrapper:-webkit-full-screen .mode-horizontal .sub-vi { font-size: 22px; }
+
+    /* --- CHẾ ĐỘ PHỤ ĐỀ 2: NẰM DỌC BÊN PHẢI --- */
+    .subtitle-overlay.mode-vertical {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      bottom: 46px;
+      width: 17%;
+      min-width: 135px;
+      background: rgba(12, 12, 12, 0.56);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      padding: 6px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      pointer-events: auto;
+      z-index: 20;
+      text-align: left;
+    }
+    .subtitle-overlay.mode-vertical:empty { display: none; }
+
+    .video-wrapper.pseudo-fs .subtitle-overlay.mode-vertical,
+    .video-wrapper:fullscreen .subtitle-overlay.mode-vertical,
+    .video-wrapper:-webkit-full-screen .subtitle-overlay.mode-vertical {
+      width: 12.5%;
+      min-width: 120px;
+      top: 10px;
+      right: 10px;
+      bottom: 52px;
+      padding: 7px 6px;
+    }
+
+    .v-sub-item {
+      padding: 5px 6px;
+      margin-bottom: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+      opacity: 0.6;
+      border-left: 2px solid transparent;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .v-sub-item:active { background: rgba(255, 255, 255, 0.12); }
+    .v-sub-item.active {
+      opacity: 1;
+      background: rgba(255, 235, 59, 0.16);
+      border-left: 2px solid #ffeb3b;
+    }
+    .v-time {
+      display: block;
+      font-size: 9px;
+      font-family: monospace;
+      color: #9e9e9e;
+      margin-bottom: 2px;
+    }
+    .v-fr {
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.32;
+      word-break: break-word;
+    }
+    .v-vi {
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 400;
+      line-height: 1.3;
+      margin-top: 2px;
+      word-break: break-word;
+    }
+    .video-wrapper.pseudo-fs .v-fr,
+    .video-wrapper:fullscreen .v-fr,
+    .video-wrapper:-webkit-full-screen .v-fr { font-size: 12px; }
+    .video-wrapper.pseudo-fs .v-vi,
+    .video-wrapper:fullscreen .v-vi,
+    .video-wrapper:-webkit-full-screen .v-vi { font-size: 11px; }
+
+    .floating-controls {
+      position: absolute;
+      top: 56px;
+      right: 12px;
+      z-index: 25;
+      display: flex;
+      gap: 6px;
+      transition: right 0.2s;
+    }
+    .video-wrapper.has-vertical-sub .floating-controls {
+      right: calc(17% + 16px);
+    }
+    .video-wrapper.pseudo-fs.has-vertical-sub .floating-controls,
+    .video-wrapper:fullscreen.has-vertical-sub .floating-controls,
+    .video-wrapper:-webkit-full-screen.has-vertical-sub .floating-controls {
+      right: calc(12.5% + 18px);
+    }
+    .floating-btn {
+      background: rgba(0, 0, 0, 0.68);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 6px;
+    }
+
+    .transcript-box {
+      margin-top: 14px;
+      max-height: 290px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #1e1e1e;
+      border-radius: 10px;
+      padding: 8px;
+      border: 1px solid #2c2c2c;
+    }
+    .transcript-box:empty { display: none; }
+    .line {
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      gap: 12px;
+      font-size: 15px;
+      border-bottom: 1px solid #262626;
+    }
+    .line:active, .line:hover { background: #2a2a2a; }
+    .line.active { background: #332b00; }
+    .line-fr { color: #ffffff; }
+    .line.active .line-fr { font-weight: 600; }
+    .time { color: #888; min-width: 48px; font-family: monospace; padding-top: 2px; font-size: 13px; }
+    .line-vi { color: #ffffff; font-size: 14px; margin-top: 4px; opacity: 0.92; }
+    .line.active .line-vi { opacity: 1; }
+
+    .ai-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    @media (max-width: 720px) { .ai-grid { grid-template-columns: 1fr; } }
+    textarea {
+      width: 100%;
+      height: 125px;
+      background: #141414;
+      color: #dcdcdc;
+      border: 1px solid #3c3c3c;
+      border-radius: 8px;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 12px;
+      resize: vertical;
+    }
+    .box-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    #status { color: #4caf50; font-size: 13px; line-height: 1.4; }
+  </style>
+</head>
+<body>
+
+  <!-- BẢNG NHẬP NHANH & ĐIỀU KHIỂN HIỂN THỊ -->
+  <div class="panel">
+    <details id="inputDrawer" open>
+      <summary>🎬 Nhập link YouTube & Bản chép lời (Không lưu lịch sử)</summary>
+      <div class="input-grid">
+        <div class="row">
+          <input type="text" id="ytUrlInput" placeholder="Dán link YouTube (vd: https://youtu.be/... hoặc https://www.youtube.com/watch?v=...)">
+        </div>
+        <textarea id="rawTranscriptInput" placeholder="Dán bản chép lời copy từ YouTube (0:00 Bonjour...), hoặc từ Bookmarklet, hoặc nội dung file .srt vào đây..."></textarea>
+        <div class="row">
+          <button type="button" class="btn-green" id="playSingleBtn">▶ Phát ngay</button>
+          <button type="button" class="btn-gray" id="resetAllBtn">↺ Làm mới phiên xem</button>
+        </div>
+      </div>
+    </details>
+
+    <div class="row">
+      <button type="button" class="btn-blue" id="toggleFrBtn">🇫🇷 Pháp: BẬT</button>
+      <button type="button" class="btn-blue" id="toggleViBtn">🇻🇳 Việt: BẬT</button>
+      <button type="button" class="btn-teal" id="toggleLayoutBtn">📐 Kiểu PĐ: Ngang</button>
+      <button type="button" class="btn-yellow" id="toggleFsBtn">⛶ Toàn màn hình</button>
+    </div>
+
+    <div id="status">Sẵn sàng — Dán link YouTube và bản chép lời ở trên rồi bấm "▶ Phát ngay".</div>
+  </div>
+
+  <!-- KHUNG PHÁT VIDEO -->
+  <div class="video-wrapper" id="videoWrapper">
+    <div class="floating-controls">
+      <button type="button" class="floating-btn" id="floatingLayoutBtn">📐 PĐ: Ngang</button>
+      <button type="button" class="floating-btn" id="floatingFsBtn">⛶ Toàn màn hình</button>
+    </div>
+    <div id="ytPlayer"></div>
+    <div id="subtitleOverlay" class="subtitle-overlay mode-horizontal">
+      <div id="subtitleBox" class="subtitle-box"></div>
+    </div>
+  </div>
+
+  <!-- DỊCH PHỤ ĐỀ QUA AI TRONG PHIÊN XEM -->
+  <div class="ai-grid">
+    <div class="panel" style="margin-bottom:0;">
+      <div class="box-header">
+        <span>1. Prompt + Phụ đề gốc (Gửi AI)</span>
+        <button type="button" class="btn-blue" id="copyRawBtn">📋 Copy trọn bộ</button>
+      </div>
+      <textarea id="exportBox" readonly placeholder="Sau khi bấm Phát ngay, Prompt kèm phụ đề gốc sẽ tự tạo ở đây..."></textarea>
+    </div>
+
+    <div class="panel" style="margin-bottom:0;">
+      <div class="box-header">
+        <span>2. Dán JSON song ngữ từ AI</span>
+        <button type="button" class="btn-green" id="applySubBtn">✨ Áp dụng phụ đề</button>
+      </div>
+      <textarea id="importBox" placeholder='Dán mảng JSON [{"from_i": 0, "to_i": 1, "speaker": "...", "fr": "...", "vi": "..."}] từ AI vào đây rồi bấm Áp dụng...'></textarea>
+    </div>
+  </div>
+
+  <!-- DANH SÁCH CÂU THOẠI -->
+  <div class="transcript-box" id="transcriptBox"></div>
+
+  <script>
+    const AI_PROMPT = `Bạn là chuyên gia biên tập và dịch thuật phụ đề song ngữ Pháp - Việt cho video hội thoại.
+Dưới đây là link video và mảng JSON chứa bản chép lời tiếng Pháp kèm mốc thời gian.
+
+NHIỆM VỤ CỦA BẠN:
+1. Gộp câu theo từng lượt nói / suy nghĩ của nhân vật:
+  - Gộp các mảnh liên tiếp thuộc cùng một nhân vật thành một đoạn hoàn chỉnh.
+  - Nếu một dòng bị dính lời của 2 nhân vật khác nhau (hoặc dính lời thoại và lời dẫn chuyện), hãy tách thành 2 phần tử riêng biệt và dùng chung chỉ số "from_i" / "to_i" tại điểm giao nhau.
+  - Nếu một nhân vật nói quá dài (trên 3 câu), hãy ngắt thành các đoạn ngắn tự nhiên (1-3 câu/đoạn) để dễ đọc trên màn hình.
+2. Xác định người nói ("speaker"):
+  - Ghi rõ tên nhân vật hoặc vai trò đang nói (nếu không rõ tên có thể để trống "").
+3. Đánh bóng tiếng Pháp ("fr") & Dịch tiếng Việt ("vi"):
+  - Sửa lỗi chính tả, thêm dấu câu chuẩn ngữ pháp tiếng Pháp.
+  - Dịch sang tiếng Việt tự nhiên, đúng ngữ cảnh. Không dùng dấu ngoặc kép (") bên trong chuỗi dịch, thay bằng « ».
+
+ĐỊNH DẠNG ĐẦU RA BẮT BUỘC (Chỉ trả về duy nhất 1 khối JSON hợp lệ):
+[
+  {"from_i": 0, "to_i": 1, "speaker": "Tên nhân vật", "fr": "Đoạn tiếng Pháp hoàn chỉnh.", "vi": "Đoạn dịch tiếng Việt tương ứng."}
+]
+
+DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
+
+    // Trạng thái chỉ tồn tại trong RAM của tab hiện tại (không lưu đĩa)
+    let currentVideoId = '';
+    let baseTranscript = [];
+    let currentTranscript = [];
+    let activeIndex = -1;
+    let activeSubIndex = -1;
+    let ytPlayer = null;
+    let showFr = true;
+    let showVi = true;
+    let subLayout = 'horizontal'; // 'horizontal' | 'vertical'
+
+    const videoWrapper = document.getElementById('videoWrapper');
+    const subtitleOverlay = document.getElementById('subtitleOverlay');
+    const transcriptBox = document.getElementById('transcriptBox');
+    const exportBox = document.getElementById('exportBox');
+    const importBox = document.getElementById('importBox');
+    const statusEl = document.getElementById('status');
+    const toggleLayoutBtn = document.getElementById('toggleLayoutBtn');
+    const floatingLayoutBtn = document.getElementById('floatingLayoutBtn');
+
+    // --- TÁCH ID YOUTUBE & PHÂN TÍCH CÁC ĐỊNH DẠNG BẢN CHÉP LỜI ---
+    function extractYouTubeId(input) {
+      const val = (input || '').trim();
+      if (!val) return '';
+      if (/^[a-zA-Z0-9_-]{11}$/.test(val)) return val;
+      const patterns = [
+        /(?:v=|\/v\/|youtu\.be\/|\/embed\/|\/shorts\/|\/live\/)([a-zA-Z0-9_-]{11})/,
+        /[?&]v=([a-zA-Z0-9_-]{11})/
+      ];
+      for (const re of patterns) {
+        const m = val.match(re);
+        if (m) return m[1];
+      }
+      return '';
+    }
+
+    function formatClockTime(sec) {
+      const total = Math.max(0, Math.floor(sec));
+      const h = Math.floor(total / 3600);
+      const m = Math.floor((total % 3600) / 60);
+      const s = total % 60;
+      if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    function parseRawPastedTranscript(rawText) {
+      const text = (rawText || '').replace(/\r/g, '').trim();
+      if (!text) return [];
+
+      // 1. Định dạng JSON mảng trực tiếp
+      if (text.startsWith('[')) {
+        try {
+          const arr = JSON.parse(text);
+          if (Array.isArray(arr)) {
+            return arr.map(it => ({
+              time: it.time || formatClockTime(Number(it.start) || 0),
+              start: Number(it.start) || 0,
+              end: Number(it.end) || (Number(it.start) || 0) + 3,
+              speaker: (it.speaker || '').trim(),
+              fr: (it.fr || it.text || '').trim(),
+              vi: (it.vi || '').trim()
+            })).filter(x => x.fr);
+          }
+        } catch {}
+      }
+
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+      // 2. Định dạng từ Bookmarklet: "start|end|text"
+      if (lines.length && /^\d+(\.\d+)?\|\d+(\.\d+)?\|/.test(lines[0])) {
+        return lines.map(line => {
+          const parts = line.split('|');
+          const start = Number(parts[0]) || 0;
+          const end = Number(parts[1]) || (start + 2.5);
+          const fr = parts.slice(2).join('|').trim();
+          return { time: formatClockTime(start), start, end, fr, vi: '' };
+        }).filter(x => x.fr);
+      }
+
+      // 3. Định dạng phụ đề .SRT: "00:00:01,000 --> 00:00:04,200"
+      const srtTimeRe = /^(\d{1,2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*(\d{1,2}):(\d{2}):(\d{2})[,.](\d{3})/;
+      if (lines.some(l => srtTimeRe.test(l))) {
+        const result = [];
+        let cur = null;
+        for (const line of lines) {
+          const m = line.match(srtTimeRe);
+          if (m) {
+            if (cur && cur.fr) result.push(cur);
+            const start = Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) + Number(m[4]) / 1000;
+            const end = Number(m[5]) * 3600 + Number(m[6]) * 60 + Number(m[7]) + Number(m[8]) / 1000;
+            cur = { time: formatClockTime(start), start: Number(start.toFixed(2)), end: Number(end.toFixed(2)), fr: '', vi: '' };
+          } else if (cur && !/^\d+$/.test(line)) {
+            const clean = line.replace(/<[^>]+>/g, '').trim();
+            cur.fr = cur.fr ? `${cur.fr} ${clean}` : clean;
+          }
+        }
+        if (cur && cur.fr) result.push(cur);
+        return result;
+      }
+
+      // 4. Định dạng copy trực tiếp từ "Hiển thị bản chép lời" của YouTube ("0:00" hoặc "1:02:15")
+      const ytTimeRe = /^(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?:\s+(.*))?$/;
+      const entries = [];
+      let currentEntry = null;
+
+      for (const line of lines) {
+        const m = line.match(ytTimeRe);
+        if (m) {
+          if (currentEntry) entries.push(currentEntry);
+          const h = m[1] ? Number(m[1]) : 0;
+          const min = Number(m[2]);
+          const sec = Number(m[3]);
+          const start = h * 3600 + min * 60 + sec;
+          currentEntry = {
+            time: formatClockTime(start),
+            start,
+            end: start + 4,
+            fr: (m[4] || '').trim(),
+            vi: ''
+          };
+        } else if (currentEntry) {
+          currentEntry.fr = currentEntry.fr ? `${currentEntry.fr} ${line}` : line;
+        }
+      }
+      if (currentEntry) entries.push(currentEntry);
+
+      for (let i = 0; i < entries.length; i++) {
+        if (i < entries.length - 1 && entries[i + 1].start > entries[i].start) {
+          entries[i].end = entries[i + 1].start;
+        } else {
+          entries[i].end = entries[i].start + Math.max(3, Math.ceil(entries[i].fr.length / 14));
+        }
+      }
+      return entries.filter(x => x.fr);
+    }
+
+    // --- TÁCH CÂU PHÁP & VIỆT THÀNH CÁC PHÂN ĐOẠN KARAOKE ĐỒNG BỘ ---
+    function findNearestWordBoundary(text, targetPos, minPos) {
+      if (targetPos <= minPos) return minPos;
+      if (targetPos >= text.length) return text.length;
+      if (text[targetPos] === ' ') return targetPos;
+
+      const maxSearch = 18;
+      for (let offset = 1; offset <= maxSearch; offset++) {
+        const right = targetPos + offset;
+        if (right < text.length && text[right] === ' ') return right;
+        const left = targetPos - offset;
+        if (left > minPos && text[left] === ' ') return left;
+      }
+      return targetPos;
+    }
+
+    function splitTextIntoExactParts(fullText, weights) {
+      const cleanText = (fullText || '').trim();
+      const count = Array.isArray(weights) ? weights.length : 0;
+      if (count <= 0) return [];
+      if (!cleanText) return new Array(count).fill('');
+      if (count === 1) return [cleanText];
+
+      const totalWeight = weights.reduce((sum, w) => sum + Math.max(1, w || 1), 0);
+      const parts = [];
+      let cursor = 0;
+      let cumWeight = 0;
+
+      for (let k = 0; k < count; k++) {
+        if (k === count - 1) {
+          parts.push(cleanText.slice(cursor).trim());
+        } else {
+          cumWeight += Math.max(1, weights[k] || 1);
+          const approxPos = Math.round((cumWeight / totalWeight) * cleanText.length);
+          const splitPos = findNearestWordBoundary(cleanText, approxPos, cursor);
+          parts.push(cleanText.slice(cursor, splitPos).trim());
+          cursor = splitPos;
+          while (cursor < cleanText.length && cleanText[cursor] === ' ') cursor++;
+        }
+      }
+      return parts;
+    }
+
+    function buildKaraokeSubs(frText, viText, subRanges, blockStart, blockEnd) {
+      const cleanFr = (frText || '').trim();
+      const cleanVi = (viText || '').trim();
+      if (!cleanFr && !cleanVi) return [];
+
+      if (!Array.isArray(subRanges) || subRanges.length <= 1) {
+        return [{ start: blockStart, end: blockEnd, text: cleanFr, vi: cleanVi }];
+      }
+
+      const weights = subRanges.map(s => Math.max(1, s.weight || 1));
+      const frRawParts = splitTextIntoExactParts(cleanFr, weights);
+      const mergedSubs = [];
+
+      for (let k = 0; k < subRanges.length; k++) {
+        const seg = subRanges[k];
+        const sliceFr = frRawParts[k] || '';
+
+        if (sliceFr || !cleanFr) {
+          mergedSubs.push({
+            start: Number(seg.start.toFixed(2)),
+            end: Number(seg.end.toFixed(2)),
+            text: sliceFr
+          });
+        } else if (mergedSubs.length > 0) {
+          mergedSubs[mergedSubs.length - 1].end = Number(seg.end.toFixed(2));
+        }
+      }
+
+      for (let k = 0; k < mergedSubs.length - 1; k++) {
+        if (mergedSubs[k + 1].start - mergedSubs[k].end < 0.35 && mergedSubs[k + 1].start >= mergedSubs[k].start) {
+          mergedSubs[k].end = mergedSubs[k + 1].start;
+        }
+      }
+
+      if (!mergedSubs.length) {
+        return [{ start: blockStart, end: blockEnd, text: cleanFr, vi: cleanVi }];
+      }
+
+      const viWeights = mergedSubs.map(s => (s.text || '').length || Math.max(0.1, s.end - s.start));
+      const viParts = splitTextIntoExactParts(cleanVi, viWeights);
+
+      return mergedSubs.map((s, idx) => ({
+        start: s.start,
+        end: s.end,
+        text: s.text,
+        vi: viParts[idx] || ''
+      }));
+    }
+
+    function prepareTranscriptKaraoke(list) {
+      list.forEach(block => {
+        const fr = (block.fr || block.text || '').trim();
+        const vi = (block.vi || '').trim();
+        if (!Array.isArray(block.subs) || !block.subs.length) {
+          block.subs = [{ start: block.start, end: block.end, text: fr, vi }];
+        }
+      });
+      return list;
+    }
+
+    function renderKaraokeFrHtml(item, scopeAttr = '') {
+      const fr = item.fr || item.text || '';
+      if (!fr) return '';
+      const subs = (Array.isArray(item.subs) && item.subs.length)
+        ? item.subs
+        : [{ start: item.start, end: item.end, text: fr }];
+
+      return subs.map((seg, k) => {
+        const segText = seg.text !== undefined ? seg.text : (k === 0 ? fr : '');
+        if (!segText) return '';
+        return `<span class="k-seg" ${scopeAttr} data-k="${k}" data-start="${seg.start}">${escapeHtml(segText)}</span>`;
+      }).filter(Boolean).join(' ');
+    }
+
+    function renderKaraokeViHtml(item, scopeAttr = '') {
+      const vi = item.vi || '';
+      if (!vi) return '';
+      const subs = (Array.isArray(item.subs) && item.subs.length)
+        ? item.subs
+        : [{ start: item.start, end: item.end, vi }];
+
+      return subs.map((seg, k) => {
+        const segVi = seg.vi !== undefined ? seg.vi : (k === 0 ? vi : '');
+        if (!segVi) return '';
+        return `<span class="k-seg" ${scopeAttr} data-k="${k}" data-start="${seg.start}">${escapeHtml(segVi)}</span>`;
+      }).filter(Boolean).join(' ');
+    }
+
+    // --- KHỞI CHẠY VIDEO LẺ & LÀM MỚI PHIÊN ---
+    document.getElementById('playSingleBtn').addEventListener('click', () => {
+      const urlVal = document.getElementById('ytUrlInput').value.trim();
+      const rawSubVal = document.getElementById('rawTranscriptInput').value.trim();
+
+      const vidId = extractYouTubeId(urlVal);
+      if (!vidId) {
+        alert('Link YouTube chưa hợp lệ. Hãy dán đường dẫn video YouTube vào ô đầu tiên!');
+        return;
+      }
+
+      const parsed = parseRawPastedTranscript(rawSubVal);
+      if (rawSubVal && !parsed.length) {
+        alert('Không nhận diện được mốc thời gian trong bản chép lời. Hãy kiểm tra lại nội dung vừa dán!');
+        return;
+      }
+
+      currentVideoId = vidId;
+      baseTranscript = JSON.parse(JSON.stringify(parsed));
+      currentTranscript = prepareTranscriptKaraoke(parsed);
+      activeIndex = -1;
+      activeSubIndex = -1;
+      importBox.value = '';
+
+      renderOverlayStructure();
+      renderTranscriptList();
+      populateExportBox(vidId, baseTranscript);
+      loadYouTubeVideo(vidId);
+
+      document.getElementById('inputDrawer').open = false;
+      statusEl.textContent = `▶ Đang phát tạm thời [${vidId}] (${currentTranscript.length} dòng phụ đề — không lưu lịch sử).`;
+    });
+
+    document.getElementById('resetAllBtn').addEventListener('click', () => {
+      document.getElementById('ytUrlInput').value = '';
+      document.getElementById('rawTranscriptInput').value = '';
+      exportBox.value = '';
+      importBox.value = '';
+      currentVideoId = '';
+      baseTranscript = [];
+      currentTranscript = [];
+      activeIndex = -1;
+      activeSubIndex = -1;
+      renderOverlayStructure();
+      transcriptBox.innerHTML = '';
+      if (ytPlayer?.stopVideo) ytPlayer.stopVideo();
+      statusEl.textContent = 'Đã xóa trắng phiên xem hiện tại.';
+    });
+
+    // --- CHUYỂN ĐỔI KIỂU PHỤ ĐỀ: NGANG <-> DỌC ---
+    function applyLayoutMode() {
+      const isVert = subLayout === 'vertical';
+      subtitleOverlay.className = isVert
+        ? 'subtitle-overlay mode-vertical'
+        : 'subtitle-overlay mode-horizontal';
+      videoWrapper.classList.toggle('has-vertical-sub', isVert);
+
+      toggleLayoutBtn.textContent = isVert ? '📐 Kiểu PĐ: Dọc' : '📐 Kiểu PĐ: Ngang';
+      floatingLayoutBtn.textContent = isVert ? '📐 PĐ: Dọc' : '📐 PĐ: Ngang';
+
+      renderOverlayStructure();
+      activeIndex = -1;
+      activeSubIndex = -1;
+      syncSubtitle(true);
+    }
+
+    function toggleLayoutMode() {
+      subLayout = subLayout === 'horizontal' ? 'vertical' : 'horizontal';
+      applyLayoutMode();
+    }
+
+    toggleLayoutBtn.addEventListener('click', toggleLayoutMode);
+    floatingLayoutBtn.addEventListener('click', toggleLayoutMode);
+
+    function renderOverlayStructure() {
+      if (subLayout === 'horizontal') {
+        subtitleOverlay.innerHTML = '<div id="subtitleBox" class="subtitle-box"></div>';
+        return;
+      }
+
+      subtitleOverlay.innerHTML = '';
+      if (!currentTranscript.length) return;
+
+      currentTranscript.forEach((item, idx) => {
+        const fr = item.fr || item.text || '';
+        const vi = item.vi || '';
+        const row = document.createElement('div');
+        row.className = 'v-sub-item';
+        row.id = 'vsub-' + idx;
+
+        let inner = `<span class="v-time">${escapeHtml(item.time || item.start.toFixed(0) + 's')}</span>`;
+        if (item.speaker) inner += `<div class="v-speaker">${escapeHtml(item.speaker)}</div>`;
+        if (showFr && fr) inner += `<div class="v-fr">${renderKaraokeFrHtml(item, `data-v-idx="${idx}"`)}</div>`;
+        if (showVi && vi) inner += `<div class="v-vi">${renderKaraokeViHtml(item, `data-v-idx="${idx}"`)}</div>`;
+
+        row.innerHTML = inner;
+        row.onclick = (e) => {
+          e.stopPropagation();
+          const kSpan = e.target.closest('.k-seg');
+          const targetTime = kSpan ? Number(kSpan.dataset.start) : item.start;
+          seekTo(targetTime);
+        };
+        subtitleOverlay.appendChild(row);
+      });
+    }
+
+    // --- BẬT / TẮT PHỤ ĐỀ TỪNG NGÔN NGỮ ---
+    const toggleFrBtn = document.getElementById('toggleFrBtn');
+    const toggleViBtn = document.getElementById('toggleViBtn');
+
+    toggleFrBtn.addEventListener('click', () => {
+      showFr = !showFr;
+      toggleFrBtn.textContent = `🇫🇷 Pháp: ${showFr ? 'BẬT' : 'TẮT'}`;
+      toggleFrBtn.className = showFr ? 'btn-blue' : 'btn-off';
+      if (subLayout === 'vertical') renderOverlayStructure();
+      activeIndex = -1;
+      activeSubIndex = -1;
+      syncSubtitle(true);
+    });
+
+    toggleViBtn.addEventListener('click', () => {
+      showVi = !showVi;
+      toggleViBtn.textContent = `🇻🇳 Việt: ${showVi ? 'BẬT' : 'TẮT'}`;
+      toggleViBtn.className = showVi ? 'btn-blue' : 'btn-off';
+      if (subLayout === 'vertical') renderOverlayStructure();
+      activeIndex = -1;
+      activeSubIndex = -1;
+      syncSubtitle(true);
+    });
+
+    // --- TOÀN MÀN HÌNH TƯƠNG THÍCH IPAD SAFARI ---
+    function toggleFullscreen() {
+      const nativeFs = document.fullscreenElement || document.webkitFullscreenElement;
+      if (nativeFs) {
+        (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
+        videoWrapper.classList.remove('pseudo-fs');
+        return;
+      }
+      if (videoWrapper.classList.contains('pseudo-fs')) {
+        videoWrapper.classList.remove('pseudo-fs');
+        return;
+      }
+
+      const reqFs = videoWrapper.requestFullscreen || videoWrapper.webkitRequestFullscreen;
+      if (reqFs) {
+        try {
+          const p = reqFs.call(videoWrapper);
+          if (p && typeof p.catch === 'function') {
+            p.catch(() => videoWrapper.classList.add('pseudo-fs'));
+          }
+        } catch {
+          videoWrapper.classList.add('pseudo-fs');
+        }
+      } else {
+        videoWrapper.classList.add('pseudo-fs');
+      }
+    }
+    document.getElementById('toggleFsBtn').addEventListener('click', toggleFullscreen);
+    document.getElementById('floatingFsBtn').addEventListener('click', toggleFullscreen);
+
+    // --- TẠO PROMPT AI & ÁP DỤNG BẢN DỊCH TẠM THỜI ---
+    function populateExportBox(vidId, lines) {
+      if (!lines.length) {
+        exportBox.value = '';
+        return;
+      }
+      const compactLines = lines.map((line, idx) => ({
+        i: idx,
+        time: line.time || '',
+        start: line.start,
+        end: line.end,
+        fr: line.fr || line.text || ''
+      }));
+
+      exportBox.value =
+        `${AI_PROMPT}\n` +
+        `Link video: https://www.youtube.com/watch?v=${vidId}\n\n` +
+        JSON.stringify(compactLines, null, 2);
+    }
+
+    document.getElementById('copyRawBtn').addEventListener('click', async () => {
+      if (!exportBox.value) return;
+      try {
+        await navigator.clipboard.writeText(exportBox.value);
+      } catch {
+        exportBox.select();
+        document.execCommand('copy');
+      }
+      const btn = document.getElementById('copyRawBtn');
+      btn.textContent = '✓ Đã copy!';
+      setTimeout(() => btn.textContent = '📋 Copy trọn bộ', 1800);
+    });
+
+    document.getElementById('applySubBtn').addEventListener('click', () => {
+      if (!baseTranscript.length) {
+        alert('Chưa có phụ đề gốc để ghép mốc thời gian!');
+        return;
+      }
+      let rawText = importBox.value.trim();
+      if (!rawText) {
+        alert('Hãy dán mảng JSON từ AI vào ô bên dưới trước khi bấm Áp dụng!');
+        return;
+      }
+      rawText = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
+      let parsed;
+      try {
+        parsed = JSON.parse(rawText);
+      } catch (err) {
+        alert('Dữ liệu dán vào chưa đúng chuẩn JSON:\n' + err.message);
+        return;
+      }
+      if (!Array.isArray(parsed) || !parsed.length) {
+        alert('Dữ liệu JSON phải là một danh sách [...] các đoạn phụ đề.');
+        return;
+      }
+
+      if (typeof parsed[0].from_i === 'number') {
+        const maxIdx = baseTranscript.length - 1;
+        currentTranscript = parsed.map((row, bIdx) => {
+          const fIdx = Math.max(0, Math.min(maxIdx, row.from_i));
+          const tIdx = Math.max(fIdx, Math.min(maxIdx, typeof row.to_i === 'number' ? row.to_i : fIdx));
+          const firstLine = baseTranscript[fIdx];
+          const lastLine = baseTranscript[tIdx];
+
+          let start = firstLine.start;
+          let end = lastLine.end;
+          const splitAtStart = bIdx > 0 && parsed[bIdx - 1].to_i === fIdx;
+          const splitAtEnd = bIdx < parsed.length - 1 && parsed[bIdx + 1].from_i === tIdx;
+
+          if (splitAtStart) start = (firstLine.start + firstLine.end) / 2;
+          if (splitAtEnd) end = (lastLine.start + lastLine.end) / 2;
+
+          const subRanges = [];
+          for (let k = fIdx; k <= tIdx; k++) {
+            const origLine = baseTranscript[k];
+            let s = origLine.start;
+            let e = origLine.end;
+            let weight = (origLine.fr || origLine.text || '').length || 1;
+
+            if (k === fIdx && splitAtStart) { s = start; weight *= 0.5; }
+            if (k === tIdx && splitAtEnd) { e = end; weight *= 0.5; }
+            if (e < s) e = s;
+            subRanges.push({ start: s, end: e, weight });
+          }
+
+          const frText = (row.fr || '').trim();
+          const viText = (row.vi || '').trim();
+          const blockStart = Number(start.toFixed(2));
+          const blockEnd = Number(end.toFixed(2));
+
+          return {
+            time: firstLine.time || '',
+            start: blockStart,
+            end: blockEnd,
+            speaker: (row.speaker || '').trim(),
+            fr: frText,
+            vi: viText,
+            subs: buildKaraokeSubs(frText, viText, subRanges, blockStart, blockEnd)
+          };
+        });
+      } else {
+        const byIndex = {};
+        parsed.forEach((row, idx) => {
+          const key = typeof row.i === 'number' ? row.i : idx;
+          byIndex[key] = row;
+        });
+
+        currentTranscript = baseTranscript.map((orig, idx) => {
+          const aiRow = byIndex[idx];
+          if (aiRow) {
+            const frText = (aiRow.fr || aiRow.text || orig.fr || orig.text || '').trim();
+            const viText = (aiRow.vi || '').trim();
+            return {
+              time: orig.time,
+              start: orig.start,
+              end: orig.end,
+              speaker: (aiRow.speaker || orig.speaker || '').trim(),
+              fr: frText,
+              vi: viText,
+              subs: [{ start: orig.start, end: orig.end, text: frText, vi: viText }]
+            };
+          }
+          return orig;
+        });
+      }
+
+      activeIndex = -1;
+      activeSubIndex = -1;
+      renderOverlayStructure();
+      renderTranscriptList();
+      syncSubtitle(true);
+      statusEl.textContent = `✨ Đã áp dụng ${currentTranscript.length} lượt thoại song ngữ Karaoke cho phiên xem này!`;
+    });
+
+    // --- TRÌNH PHÁT YOUTUBE & ĐỒNG BỘ KARAOKE ---
+    function loadYouTubeVideo(videoId) {
+      if (ytPlayer?.loadVideoById) {
+        ytPlayer.loadVideoById(videoId);
+      } else {
+        window.pendingYtId = videoId;
+        if (!document.getElementById('yt-api-script')) {
+          const tag = document.createElement('script');
+          tag.id = 'yt-api-script';
+          tag.src = 'https://www.youtube.com/iframe_api';
+          document.head.appendChild(tag);
+        }
+      }
+    }
+
+    window.onYouTubeIframeAPIReady = function () {
+      ytPlayer = new YT.Player('ytPlayer', {
+        videoId: window.pendingYtId || '',
+        playerVars: { playsinline: 1, fs: 0, rel: 0, cc_load_policy: 0 }
+      });
+    };
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+
+    function renderTranscriptList() {
+      transcriptBox.innerHTML = '';
+      currentTranscript.forEach((item, idx) => {
+        const vi = item.vi || '';
+        const div = document.createElement('div');
+        div.className = 'line';
+        div.id = 'line-' + idx;
+        div.innerHTML = `
+          <span class="time">${item.time || item.start.toFixed(1) + 's'}</span>
+          <div>
+            ${item.speaker ? `<span class="speaker-badge">${escapeHtml(item.speaker)}</span>` : ''}
+            <div class="line-fr">${renderKaraokeFrHtml(item, `data-l-idx="${idx}"`)}</div>
+            ${vi ? `<div class="line-vi">${renderKaraokeViHtml(item, `data-l-idx="${idx}"`)}</div>` : ''}
+          </div>
+        `;
+        div.onclick = (e) => {
+          const kSpan = e.target.closest('.k-seg');
+          const targetTime = kSpan ? Number(kSpan.dataset.start) : item.start;
+          seekTo(targetTime);
+        };
+        transcriptBox.appendChild(div);
+      });
+    }
+
+    function seekTo(seconds) {
+      if (ytPlayer?.seekTo) {
+        ytPlayer.seekTo(seconds, true);
+        ytPlayer.playVideo();
+      }
+    }
+
+    function updateKaraokeHighlight(blockIdx, subIdx) {
+      document.querySelectorAll('.k-seg.active').forEach(el => el.classList.remove('active'));
+      if (blockIdx === -1 || subIdx === -1) return;
+
+      document.querySelectorAll(`#subtitleBox .k-seg[data-k="${subIdx}"]`).forEach(el => el.classList.add('active'));
+      document.querySelectorAll(`.k-seg[data-v-idx="${blockIdx}"][data-k="${subIdx}"]`).forEach(el => el.classList.add('active'));
+      document.querySelectorAll(`.k-seg[data-l-idx="${blockIdx}"][data-k="${subIdx}"]`).forEach(el => el.classList.add('active'));
+    }
+
+    function syncSubtitle(forceRender = false) {
+      if (!currentTranscript.length || !ytPlayer?.getCurrentTime) return;
+      const currentTime = ytPlayer.getCurrentTime();
+
+      const idx = currentTranscript.findIndex(item => currentTime >= item.start && currentTime <= item.end);
+      const turnChanged = idx !== activeIndex || forceRender;
+
+      if (turnChanged) {
+        if (activeIndex !== -1) {
+          document.getElementById('line-' + activeIndex)?.classList.remove('active');
+          document.getElementById('vsub-' + activeIndex)?.classList.remove('active');
+        }
+        activeIndex = idx;
+        activeSubIndex = -1;
+
+        if (subLayout === 'horizontal') {
+          const box = document.getElementById('subtitleBox');
+          if (box) {
+            if (idx !== -1) {
+              const item = currentTranscript[idx];
+              const fr = item.fr || item.text || '';
+              const vi = item.vi || '';
+              let html = '';
+              if (item.speaker) html += `<div class="speaker-badge">${escapeHtml(item.speaker)}</div>`;
+              if (showFr && fr) html += `<div class="sub-fr">${renderKaraokeFrHtml(item)}</div>`;
+              if (showVi && vi) html += `<div class="sub-vi">${renderKaraokeViHtml(item)}</div>`;
+              box.innerHTML = html;
+            } else {
+              box.innerHTML = '';
+            }
+          }
+        } else if (idx !== -1) {
+          const activeVSub = document.getElementById('vsub-' + idx);
+          if (activeVSub) {
+            activeVSub.classList.add('active');
+            const targetScroll = activeVSub.offsetTop - (subtitleOverlay.clientHeight / 2) + (activeVSub.clientHeight / 2);
+            subtitleOverlay.scrollTo({ top: Math.max(0, targetScroll), behavior: forceRender ? 'auto' : 'smooth' });
+          }
+        }
+
+        if (idx !== -1) {
+          const activeLine = document.getElementById('line-' + idx);
+          if (activeLine) {
+            activeLine.classList.add('active');
+            if (!forceRender) activeLine.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
+        }
+      }
+
+      let subIdx = -1;
+      if (idx !== -1) {
+        const subs = currentTranscript[idx].subs || [];
+        subIdx = subs.findIndex(s => currentTime >= s.start && currentTime <= s.end);
+      }
+
+      if (turnChanged || subIdx !== activeSubIndex) {
+        activeSubIndex = subIdx;
+        updateKaraokeHighlight(idx, subIdx);
+      }
+    }
+
+    setInterval(syncSubtitle, 100);
+  </script>
+</body>
+</html>
