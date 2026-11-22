@@ -138,13 +138,21 @@
       margin-bottom: 1px;
     }
 
-    /* Hiệu ứng Karaoke: Mặc định trắng, đoạn đang nói bôi vàng cả Pháp & Việt */
+    /* Hiệu ứng Karaoke: Mặc định trắng, đoạn đang nói bôi vàng đậm cho ngoại ngữ & đỏ cho tiếng Việt */
     .k-seg {
       color: #ffffff;
       transition: color 0.1s ease;
     }
-    .k-seg.active {
-      color: #ffeb3b;
+    .k-seg.active,
+    .sub-fr .k-seg.active,
+    .v-fr .k-seg.active,
+    .line-fr .k-seg.active {
+      color: #ffb300;
+    }
+    .sub-vi .k-seg.active,
+    .v-vi .k-seg.active,
+    .line-vi .k-seg.active {
+      color: #ff3b30;
     }
 
     /* --- CHẾ ĐỘ PHỤ ĐỀ 1: NẰM NGANG (NỀN ĐEN TRONG SUỐT, KHÔNG BLUR, KÉO THẢ TỰ DO) --- */
@@ -232,7 +240,7 @@
     }
     .v-drag-handle:active {
       cursor: grabbing;
-      color: #ffeb3b;
+      color: #ffb300;
     }
 
     .v-sub-list {
@@ -262,8 +270,8 @@
     .v-sub-item:active { background: rgba(255, 255, 255, 0.12); }
     .v-sub-item.active {
       opacity: 1;
-      background: rgba(255, 235, 59, 0.14);
-      border-left: 2px solid rgba(255, 235, 59, 0.85);
+      background: rgba(255, 179, 0, 0.14);
+      border-left: 2px solid rgba(255, 179, 0, 0.9);
     }
     .v-time {
       display: block;
