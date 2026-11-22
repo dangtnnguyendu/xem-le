@@ -1,7 +1,3 @@
-
-Biểu tượng HTML
-index-v2
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -709,8 +705,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     }
 
     function parseRawPastedTranscript(rawText) {
-      const text = (rawText || '').replace(/
-/g, '').trim();
+      const text = (rawText || '').replace(/\r/g, '').trim();
       if (!text) return [];
 
       // 1. Định dạng JSON mảng trực tiếp
@@ -730,8 +725,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         } catch {}
       }
 
-      const lines = text.split('
-').map(l => l.trim()).filter(Boolean);
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
       // 2. Định dạng từ Userscripts / Bookmarklet: "start|end|text"
       if (lines.length && /^\d+(\.\d+)?\|\d+(\.\d+)?\|/.test(lines[0])) {
@@ -766,7 +760,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       }
 
       // 4. Định dạng copy trực tiếp từ "Hiển thị bản chép lời" của YouTube ("0:00" hoặc "- 00:00" hoặc "[00:00]")
-      const ytTimeRe = /^[-•*\s[\](]*(?:(\d{1,2}):)?(\d{1,2}):(\d{2})[\])-\s]*(.*)$/;
+      const ytTimeRe = /^[-•*\s[\](]*(?:(\d{1,2}):)?(\d{1,2}):(\d{2})[\])\-\s]*(.*)$/;
       const entries = [];
       let currentEntry = null;
 
@@ -1145,11 +1139,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       }));
 
       exportBox.value =
-        `${AI_PROMPT}
-` +
-        `Link video: https://www.youtube.com/watch?v=${vidId}
-
-` +
+        `${AI_PROMPT}\n` +
+        `Link video: https://www.youtube.com/watch?v=${vidId}\n\n` +
         JSON.stringify(compactLines, null, 2);
     }
 
@@ -1182,8 +1173,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       try {
         parsed = JSON.parse(rawText);
       } catch (err) {
-        alert('Dữ liệu dán vào chưa đúng chuẩn JSON:
-' + err.message);
+        alert('Dữ liệu dán vào chưa đúng chuẩn JSON:\n' + err.message);
         return;
       }
       if (!Array.isArray(parsed) || !parsed.length) {
@@ -1459,5 +1449,3 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
   </script>
 </body>
 </html>
-
-Storing subtitle position ratios
