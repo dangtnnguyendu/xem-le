@@ -68,7 +68,7 @@
     summary { cursor: pointer; color: #ffd54f; font-weight: 600; user-select: none; }
     .input-grid { display: grid; gap: 10px; margin-top: 10px; }
 
-    /* Khung phát video & chế độ toàn màn hình giữ phụ đề trên iPad */
+    /* Khung phát video & chế độ toàn màn hình đẩy video sát mép trên, dồn toàn bộ dải đen xuống dưới */
     .video-wrapper {
       position: relative;
       width: 100%;
@@ -86,9 +86,27 @@
       height: 100dvh !important;
       z-index: 99999;
       border-radius: 0;
+      background: #000;
+      display: flex !important;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
     }
 
     #ytPlayer { width: 100%; height: 100%; display: block; }
+
+    /* Trong toàn màn hình: giữ khung iframe đúng tỷ lệ 16:9 sát mép trên để YouTube không tạo dải đen trên, dồn toàn bộ khoảng trống xuống dưới */
+    .video-wrapper.pseudo-fs #ytPlayer,
+    .video-wrapper:fullscreen #ytPlayer,
+    .video-wrapper:-webkit-full-screen #ytPlayer {
+      width: 100% !important;
+      max-width: calc(100vh * 16 / 9);
+      max-width: calc(100dvh * 16 / 9);
+      height: auto !important;
+      aspect-ratio: 16 / 9;
+      flex-shrink: 0;
+    }
+
     /* Ngăn iframe YouTube cướp cảm ứng khi đang kéo thả phụ đề */
     .video-wrapper.dragging-sub #ytPlayer {
       pointer-events: none !important;
@@ -136,7 +154,7 @@
       left: 50%;
       transform: translateX(-50%);
       width: max-content;
-      max-width: 92%;
+      max-width: 94%;
       text-align: center;
       pointer-events: auto;
       touch-action: none;
@@ -145,6 +163,13 @@
       -webkit-user-select: none;
       z-index: 20;
     }
+    /* Trong toàn màn hình: đặt mặc định phụ đề ngang nằm gọn trong dải đen bên dưới để không che hình */
+    .video-wrapper.pseudo-fs .subtitle-overlay.mode-horizontal,
+    .video-wrapper:fullscreen .subtitle-overlay.mode-horizontal,
+    .video-wrapper:-webkit-full-screen .subtitle-overlay.mode-horizontal {
+      bottom: max(16px, env(safe-area-inset-bottom, 16px));
+      max-width: 95%;
+    }
     .subtitle-overlay.mode-horizontal:active {
       cursor: grabbing;
     }
@@ -152,9 +177,9 @@
       display: inline-block;
       background: rgba(0, 0, 0, 0.36);
       border: 1px solid rgba(255, 255, 255, 0.16);
-      padding: 5px 12px;
+      padding: 6px 14px;
       border-radius: 8px;
-      line-height: 1.38;
+      line-height: 1.36;
       max-width: 100%;
       text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 6px rgba(0, 0, 0, 0.8);
     }
@@ -164,10 +189,10 @@
 
     .video-wrapper.pseudo-fs .mode-horizontal .sub-fr,
     .video-wrapper:fullscreen .mode-horizontal .sub-fr,
-    .video-wrapper:-webkit-full-screen .mode-horizontal .sub-fr { font-size: 21px; }
+    .video-wrapper:-webkit-full-screen .mode-horizontal .sub-fr { font-size: 20px; }
     .video-wrapper.pseudo-fs .mode-horizontal .sub-vi,
     .video-wrapper:fullscreen .mode-horizontal .sub-vi,
-    .video-wrapper:-webkit-full-screen .mode-horizontal .sub-vi { font-size: 17.5px; }
+    .video-wrapper:-webkit-full-screen .mode-horizontal .sub-vi { font-size: 17px; }
 
     /* --- CHẾ ĐỘ PHỤ ĐỀ 2: NẰM DỌC (NỀN ĐEN TRONG SUỐT, KHÔNG BLUR, CÓ THANH KÉO THẢ) --- */
     .subtitle-overlay.mode-vertical {
@@ -222,7 +247,7 @@
     .video-wrapper:-webkit-full-screen .subtitle-overlay.mode-vertical {
       width: 12.5%;
       min-width: 120px;
-      height: calc(100% - 62px);
+      height: calc(100% - 28px);
     }
 
     .v-sub-item {
@@ -451,10 +476,11 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     let isPinned = false;
     let lastSavedTime = 0;
 
-    // Lưu vị trí kéo thả tùy chỉnh theo tỷ lệ khung hình (0..1) để tương thích cả toàn màn hình
+    // Lưu riêng vị trí kéo thả cho chế độ thường, toàn màn hình và phụ đề dọc
     let customSubPos = {
-      horizontal: null, // { leftRatio, topRatio }
-      vertical: null    // { leftRatio, topRatio }
+      horizontal: null,   // { leftRatio, topRatio } khi xem thường
+      horizontalFs: null, // { leftRatio, topRatio } khi toàn màn hình
+      vertical: null      // { leftRatio, topRatio }
     };
 
     const videoWrapper = document.getElementById('videoWrapper');
@@ -466,6 +492,19 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     const pinBtn = document.getElementById('pinBtn');
     const toggleLayoutBtn = document.getElementById('toggleLayoutBtn');
     const floatingLayoutBtn = document.getElementById('floatingLayoutBtn');
+
+    function isVideoFullscreen() {
+      return Boolean(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        videoWrapper.classList.contains('pseudo-fs')
+      );
+    }
+
+    function getCurrentPosKey() {
+      if (subLayout === 'vertical') return 'vertical';
+      return isVideoFullscreen() ? 'horizontalFs' : 'horizontal';
+    }
 
     // --- KÉO THẢ DI ĐỘNG KHUNG PHỤ ĐỀ (CẢ CẢM ỨNG IPAD & CHUỘT) ---
     let dragState = null;
@@ -480,7 +519,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     }
 
     function applySavedOverlayPosition() {
-      const pos = customSubPos[subLayout];
+      const posKey = getCurrentPosKey();
+      const pos = customSubPos[posKey];
       if (!pos) {
         resetOverlayInlinePosition();
         if (subLayout === 'vertical') {
@@ -510,7 +550,6 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     }
 
     function clampOverlayInBounds() {
-      if (!customSubPos[subLayout]) return;
       applySavedOverlayPosition();
     }
 
@@ -525,19 +564,17 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     }
 
     function startSubDrag(e) {
-      // Ở chế độ ngang: chạm bất kỳ đâu trên hộp phụ đề đều kéo được
-      // Ở chế độ dọc: chạm vào thanh nắm ".v-drag-handle" ở đầu khung để kéo (vẫn giữ cuộn & bấm câu bên dưới)
       if (subLayout === 'horizontal') {
         if (!e.target.closest('#subtitleOverlay')) return;
       } else {
         if (!e.target.closest('.v-drag-handle')) return;
       }
 
-      // Chạm đúp (double-tap / double-click) để đưa phụ đề về vị trí mặc định ban đầu
+      // Chạm đúp (double-tap / double-click) để đưa phụ đề về vị trí mặc định (nằm gọn trong dải đen dưới khi toàn màn hình)
       const now = Date.now();
       if (now - lastTapTime < 300) {
         lastTapTime = 0;
-        customSubPos[subLayout] = null;
+        customSubPos[getCurrentPosKey()] = null;
         applySavedOverlayPosition();
         if (isPinned) savePinnedSession();
         e.preventDefault();
@@ -587,7 +624,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       }
 
       if (wrapRect.width > 0 && wrapRect.height > 0) {
-        customSubPos[subLayout] = {
+        customSubPos[getCurrentPosKey()] = {
           leftRatio: newLeft / wrapRect.width,
           topRatio: newTop / wrapRect.height
         };
@@ -961,7 +998,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       loadYouTubeVideo(vidId, 0);
 
       document.getElementById('inputDrawer').open = false;
-      statusEl.textContent = `▶ Đang phát [${vidId}] (${currentTranscript.length} dòng phụ đề). Kéo khung phụ đề để đặt vị trí, bấm "📌 Ghim" để giữ lại.`;
+      statusEl.textContent = `▶ Đang phát [${vidId}] (${currentTranscript.length} dòng phụ đề). Toàn màn hình sẽ đẩy video sát lên trên để nhét phụ đề vào dải đen bên dưới.`;
     });
 
     document.getElementById('resetAllBtn').addEventListener('click', () => {
@@ -975,7 +1012,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       currentTranscript = [];
       activeIndex = -1;
       activeSubIndex = -1;
-      customSubPos = { horizontal: null, vertical: null };
+      customSubPos = { horizontal: null, horizontalFs: null, vertical: null };
       resetOverlayInlinePosition();
       updatePinBtnUI();
       renderOverlayStructure();
@@ -1339,7 +1376,6 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       if (!currentTranscript.length || !ytPlayer?.getCurrentTime) return;
       const currentTime = ytPlayer.getCurrentTime();
 
-      // Lưu tự động mốc giây đang xem mỗi 3 giây nếu video đang được ghim
       if (isPinned && Math.abs(currentTime - lastSavedTime) >= 3) {
         savePinnedSession(currentTime);
       }
@@ -1367,7 +1403,9 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
               if (showFr && fr) html += `<div class="sub-fr">${renderKaraokeFrHtml(item)}</div>`;
               if (showVi && vi) html += `<div class="sub-vi">${renderKaraokeViHtml(item)}</div>`;
               box.innerHTML = html;
-              clampOverlayInBounds();
+              if (customSubPos[getCurrentPosKey()]) {
+                clampOverlayInBounds();
+              }
             } else {
               box.innerHTML = '';
             }
@@ -1423,6 +1461,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         if (saved.customSubPos) {
           customSubPos = {
             horizontal: saved.customSubPos.horizontal || null,
+            horizontalFs: saved.customSubPos.horizontalFs || null,
             vertical: saved.customSubPos.vertical || null
           };
         }
