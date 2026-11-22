@@ -138,7 +138,26 @@
       margin-bottom: 1px;
     }
 
-    /* Hiệu ứng Karaoke: Mặc định trắng, đoạn đang nói bôi vàng đậm cho ngoại ngữ & đỏ cho tiếng Việt */
+    /* Hiệu ứng Karaoke từng từ: Mặc định trắng, từ đang nói bôi vàng đậm cho ngoại ngữ & đỏ cho tiếng Việt */
+    .k-word {
+      color: #ffffff;
+      transition: color 0.08s ease;
+    }
+    .k-word.active,
+    .sub-fr .k-word.active,
+    .v-fr .k-word.active,
+    .line-fr .k-word.active {
+      color: #ffb300;
+      font-weight: 700;
+    }
+    .sub-vi .k-word.active,
+    .v-vi .k-word.active,
+    .line-vi .k-word.active {
+      color: #ff3b30;
+      font-weight: 600;
+    }
+
+    /* Hiệu ứng Karaoke theo đoạn/mảnh: Mặc định trắng, đoạn đang nói bôi vàng đậm cho ngoại ngữ & đỏ cho tiếng Việt */
     .k-seg {
       color: #ffffff;
       transition: color 0.1s ease;
@@ -395,7 +414,7 @@
         <div class="row">
           <input type="text" id="ytUrlInput" placeholder="Dán link YouTube (vd: https://youtu.be/... hoặc https://www.youtube.com/watch?v=...)">
         </div>
-        <textarea id="rawTranscriptInput" placeholder="Dán bản chép lời copy từ YouTube (0:00 Bonjour...), hoặc từ Userscripts, hoặc nội dung file .srt vào đây..."></textarea>
+        <textarea id="rawTranscriptInput" placeholder="Dán bản chép lời định dạng start|end|word (mili-giây), 0:00 Bonjour..., hoặc nội dung file .srt vào đây..."></textarea>
         <div class="row">
           <button type="button" class="btn-green" id="playSingleBtn">▶ Phát ngay</button>
           <button type="button" class="btn-gray" id="resetAllBtn">↺ Làm mới phiên xem</button>
@@ -477,6 +496,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     let currentTranscript = [];
     let activeIndex = -1;
     let activeSubIndex = -1;
+    let activeFrWordIndex = -1;
+    let activeViWordIndex = -1;
     let ytPlayer = null;
     let showFr = true;
     let showVi = true;
@@ -484,11 +505,10 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     let isPinned = false;
     let lastSavedTime = 0;
 
-    // Lưu riêng vị trí kéo thả cho chế độ thường, toàn màn hình và phụ đề dọc
     let customSubPos = {
-      horizontal: null,   // { leftRatio, topRatio } khi xem thường
-      horizontalFs: null, // { leftRatio, topRatio } khi toàn màn hình
-      vertical: null      // { leftRatio, topRatio }
+      horizontal: null,
+      horizontalFs: null,
+      vertical: null
     };
 
     const videoWrapper = document.getElementById('videoWrapper');
@@ -514,7 +534,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       return isVideoFullscreen() ? 'horizontalFs' : 'horizontal';
     }
 
-    // --- KÉO THẢ DI ĐỘNG KHUNG PHỤ ĐỀ (CẢ CẢM ỨNG IPAD & CHUỘT) ---
+    // --- KÉO THẢ DI ĐỘNG KHUNG PHỤ ĐỀ ---
     let dragState = null;
     let lastTapTime = 0;
 
@@ -578,7 +598,6 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         if (!e.target.closest('.v-drag-handle')) return;
       }
 
-      // Chạm đúp (double-tap / double-click) để đưa phụ đề về vị trí mặc định (nằm gọn trong dải đen dưới khi toàn màn hình)
       const now = Date.now();
       if (now - lastTapTime < 300) {
         lastTapTime = 0;
@@ -660,7 +679,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     window.addEventListener('mouseup', endSubDrag);
     window.addEventListener('resize', clampOverlayInBounds);
 
-    // --- TÍNH NĂNG GHIM VIDEO ĐANG XEM (CHỐNG MẤT KHI THOÁT / RELOAD SAFARI) ---
+    // --- TÍNH NĂNG GHIM VIDEO ĐANG XEM ---
     function updatePinBtnUI() {
       if (!currentVideoId) {
         pinBtn.disabled = true;
@@ -764,7 +783,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
               end: Number(it.end) || (Number(it.start) || 0) + 3,
               speaker: (it.speaker || '').trim(),
               fr: (it.fr || it.text || '').trim(),
-              vi: (it.vi || '').trim()
+              vi: (it.vi || '').trim(),
+              words: Array.isArray(it.words) ? it.words : undefined
             })).filter(x => x.fr);
           }
         } catch {}
@@ -772,15 +792,54 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
 
       const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
-      // 2. Định dạng từ Userscripts / Bookmarklet: "start|end|text"
+      // 2. Định dạng từng từ / mảnh mức mili-giây: "start|end|word" -> gom câu & lưu mốc từng từ
       if (lines.length && /^\d+(\.\d+)?\|\d+(\.\d+)?\|/.test(lines[0])) {
-        return lines.map(line => {
+        const rawWords = [];
+        for (const line of lines) {
           const parts = line.split('|');
-          const start = Number(parts[0]) || 0;
-          const end = Number(parts[1]) || (start + 2.5);
-          const fr = parts.slice(2).join('|').trim();
-          return { time: formatClockTime(start), start, end, fr, vi: '' };
-        }).filter(x => x.fr);
+          const wStart = Number(parts[0]);
+          const wEnd = Number(parts[1]);
+          const word = parts.slice(2).join('|').trim();
+          if (!word || Number.isNaN(wStart)) continue;
+          const safeStart = Number(wStart.toFixed(3));
+          const safeEnd = Number((Number.isNaN(wEnd) || wEnd <= safeStart ? safeStart + 0.12 : wEnd).toFixed(3));
+          rawWords.push({ start: safeStart, end: safeEnd, word });
+        }
+
+        const blocks = [];
+        let bucket = [];
+
+        const flushBucket = () => {
+          if (!bucket.length) return;
+          const bStart = bucket[0].start;
+          const bEnd = Math.max(bucket[bucket.length - 1].end, bStart + 0.2);
+          const frText = bucket.map(w => w.word).join(' ').replace(/\s+([.,!?;:…»])/g, '$1').trim();
+          blocks.push({
+            time: formatClockTime(bStart),
+            start: Number(bStart.toFixed(2)),
+            end: Number(bEnd.toFixed(2)),
+            fr: frText,
+            vi: '',
+            words: bucket.slice(),
+            frWords: bucket.slice()
+          });
+          bucket = [];
+        };
+
+        for (let idx = 0; idx < rawWords.length; idx++) {
+          const w = rawWords[idx];
+          const prev = bucket.length ? bucket[bucket.length - 1] : null;
+          const gap = prev ? (w.start - prev.end) : 0;
+          const endsSentence = prev && /[.!?…]$/.test(prev.word);
+          const isLongEnough = bucket.length >= 12 && /[,;:]?$/.test(prev ? prev.word : '');
+
+          if (bucket.length && (gap > 1.35 || endsSentence || isLongEnough || bucket.length >= 24)) {
+            flushBucket();
+          }
+          bucket.push(w);
+        }
+        flushBucket();
+        return blocks;
       }
 
       // 3. Định dạng phụ đề .SRT: "00:00:01,000 --> 00:00:04,200"
@@ -804,7 +863,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         return result;
       }
 
-      // 4. Định dạng copy trực tiếp từ "Hiển thị bản chép lời" của YouTube ("0:00" hoặc "- 00:00" hoặc "[00:00]")
+      // 4. Định dạng copy trực tiếp từ "Hiển thị bản chép lời" của YouTube
       const ytTimeRe = /^[-•*\s[\](]*(?:(\d{1,2}):)?(\d{1,2}):(\d{2})[\])\-\s]*(.*)$/;
       const entries = [];
       let currentEntry = null;
@@ -840,7 +899,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       return entries.filter(x => x.fr);
     }
 
-    // --- TÁCH CÂU PHÁP & VIỆT THÀNH CÁC PHÂN ĐOẠN KARAOKE ĐỒNG BỘ ---
+    // --- TÁCH CÂU PHÁP & VIỆT THÀNH CÁC PHÂN ĐOẠN KARAOKE TỪNG TỪ ---
     function findNearestWordBoundary(text, targetPos, minPos) {
       if (targetPos <= minPos) return minPos;
       if (targetPos >= text.length) return text.length;
@@ -932,12 +991,57 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       }));
     }
 
+    function alignWordsToText(words, targetText, fallbackStart, fallbackEnd) {
+      const cleanText = (targetText || '').trim();
+      if (!cleanText) return [];
+      const tokens = cleanText.split(/\s+/).filter(Boolean);
+      if (!tokens.length) return [];
+
+      if (Array.isArray(words) && words.length > 0) {
+        const nW = words.length;
+        return tokens.map((tok, idx) => {
+          const wStartIdx = Math.min(nW - 1, Math.floor((idx * nW) / tokens.length));
+          const wEndIdx = Math.min(nW - 1, Math.floor(((idx + 1) * nW) / tokens.length) - 1);
+          const s = words[wStartIdx].start;
+          const e = Math.max(s + 0.08, words[Math.max(wStartIdx, wEndIdx)].end);
+          return {
+            start: Number(s.toFixed(3)),
+            end: Number(e.toFixed(3)),
+            word: tok
+          };
+        });
+      }
+
+      const span = Math.max(0.4, (fallbackEnd || (fallbackStart + 2)) - (fallbackStart || 0));
+      const step = span / tokens.length;
+      return tokens.map((tok, idx) => {
+        const s = (fallbackStart || 0) + idx * step;
+        return {
+          start: Number(s.toFixed(3)),
+          end: Number((s + step).toFixed(3)),
+          word: tok
+        };
+      });
+    }
+
     function prepareTranscriptKaraoke(list) {
       list.forEach(block => {
         const fr = (block.fr || block.text || '').trim();
         const vi = (block.vi || '').trim();
         if (!Array.isArray(block.subs) || !block.subs.length) {
           block.subs = [{ start: block.start, end: block.end, text: fr, vi }];
+        }
+        if (!Array.isArray(block.frWords) || !block.frWords.length) {
+          const srcWords = Array.isArray(block.words) && block.words.length
+            ? block.words
+            : block.subs.flatMap(s => alignWordsToText(null, s.text || '', s.start, s.end));
+          block.frWords = alignWordsToText(srcWords, fr, block.start, block.end);
+        }
+        if (vi && (!Array.isArray(block.viWords) || !block.viWords.length)) {
+          const srcWords = Array.isArray(block.frWords) && block.frWords.length
+            ? block.frWords
+            : block.words;
+          block.viWords = alignWordsToText(srcWords, vi, block.start, block.end);
         }
       });
       return list;
@@ -946,6 +1050,11 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     function renderKaraokeFrHtml(item, scopeAttr = '') {
       const fr = item.fr || item.text || '';
       if (!fr) return '';
+      if (Array.isArray(item.frWords) && item.frWords.length) {
+        return item.frWords.map((w, k) =>
+          `<span class="k-word" ${scopeAttr} data-w="${k}" data-start="${w.start}" data-end="${w.end}">${escapeHtml(w.word)}</span>`
+        ).join(' ');
+      }
       const subs = (Array.isArray(item.subs) && item.subs.length)
         ? item.subs
         : [{ start: item.start, end: item.end, text: fr }];
@@ -960,6 +1069,11 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     function renderKaraokeViHtml(item, scopeAttr = '') {
       const vi = item.vi || '';
       if (!vi) return '';
+      if (Array.isArray(item.viWords) && item.viWords.length) {
+        return item.viWords.map((w, k) =>
+          `<span class="k-word" ${scopeAttr} data-w="${k}" data-start="${w.start}" data-end="${w.end}">${escapeHtml(w.word)}</span>`
+        ).join(' ');
+      }
       const subs = (Array.isArray(item.subs) && item.subs.length)
         ? item.subs
         : [{ start: item.start, end: item.end, vi }];
@@ -997,6 +1111,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       currentTranscript = prepareTranscriptKaraoke(parsed);
       activeIndex = -1;
       activeSubIndex = -1;
+      activeFrWordIndex = -1;
+      activeViWordIndex = -1;
       importBox.value = '';
       updatePinBtnUI();
 
@@ -1006,7 +1122,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       loadYouTubeVideo(vidId, 0);
 
       document.getElementById('inputDrawer').open = false;
-      statusEl.textContent = `▶ Đang phát [${vidId}] (${currentTranscript.length} dòng phụ đề). Toàn màn hình sẽ đẩy video sát lên trên để nhét phụ đề vào dải đen bên dưới.`;
+      statusEl.textContent = `▶ Đang phát [${vidId}] (${currentTranscript.length} câu phụ đề, karaoke từng từ). Toàn màn hình sẽ đẩy video sát lên trên để nhét phụ đề vào dải đen bên dưới.`;
     });
 
     document.getElementById('resetAllBtn').addEventListener('click', () => {
@@ -1020,6 +1136,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       currentTranscript = [];
       activeIndex = -1;
       activeSubIndex = -1;
+      activeFrWordIndex = -1;
+      activeViWordIndex = -1;
       customSubPos = { horizontal: null, horizontalFs: null, vertical: null };
       resetOverlayInlinePosition();
       updatePinBtnUI();
@@ -1044,6 +1162,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       applySavedOverlayPosition();
       activeIndex = -1;
       activeSubIndex = -1;
+      activeFrWordIndex = -1;
+      activeViWordIndex = -1;
       syncSubtitle(true);
       if (isPinned) savePinnedSession();
     }
@@ -1090,7 +1210,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         row.innerHTML = inner;
         row.onclick = (e) => {
           e.stopPropagation();
-          const kSpan = e.target.closest('.k-seg');
+          const kSpan = e.target.closest('.k-word, .k-seg');
           const targetTime = kSpan ? Number(kSpan.dataset.start) : item.start;
           seekTo(targetTime);
         };
@@ -1117,6 +1237,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       if (subLayout === 'vertical') renderOverlayStructure();
       activeIndex = -1;
       activeSubIndex = -1;
+      activeFrWordIndex = -1;
+      activeViWordIndex = -1;
       syncSubtitle(true);
       if (isPinned) savePinnedSession();
     });
@@ -1127,6 +1249,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       if (subLayout === 'vertical') renderOverlayStructure();
       activeIndex = -1;
       activeSubIndex = -1;
+      activeFrWordIndex = -1;
+      activeViWordIndex = -1;
       syncSubtitle(true);
       if (isPinned) savePinnedSession();
     });
@@ -1243,6 +1367,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
           if (splitAtEnd) end = (lastLine.start + lastLine.end) / 2;
 
           const subRanges = [];
+          const rawBlockWords = [];
+
           for (let k = fIdx; k <= tIdx; k++) {
             const origLine = baseTranscript[k];
             let s = origLine.start;
@@ -1253,12 +1379,24 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
             if (k === tIdx && splitAtEnd) { e = end; weight *= 0.5; }
             if (e < s) e = s;
             subRanges.push({ start: s, end: e, weight });
+
+            if (Array.isArray(origLine.words) && origLine.words.length) {
+              for (const w of origLine.words) {
+                if (k === fIdx && splitAtStart && w.end <= start) continue;
+                if (k === tIdx && splitAtEnd && w.start >= end) continue;
+                const ws = (k === fIdx && splitAtStart) ? Math.max(w.start, start) : w.start;
+                const we = (k === tIdx && splitAtEnd) ? Math.min(w.end, end) : w.end;
+                if (we > ws) rawBlockWords.push({ start: ws, end: we, word: w.word });
+              }
+            }
           }
 
           const frText = (row.fr || '').trim();
           const viText = (row.vi || '').trim();
           const blockStart = Number(start.toFixed(2));
           const blockEnd = Number(end.toFixed(2));
+          const frWords = alignWordsToText(rawBlockWords, frText, blockStart, blockEnd);
+          const viWords = alignWordsToText(frWords, viText, blockStart, blockEnd);
 
           return {
             time: firstLine.time || '',
@@ -1267,6 +1405,9 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
             speaker: (row.speaker || '').trim(),
             fr: frText,
             vi: viText,
+            words: rawBlockWords,
+            frWords,
+            viWords,
             subs: buildKaraokeSubs(frText, viText, subRanges, blockStart, blockEnd)
           };
         });
@@ -1282,6 +1423,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
           if (aiRow) {
             const frText = (aiRow.fr || aiRow.text || orig.fr || orig.text || '').trim();
             const viText = (aiRow.vi || '').trim();
+            const frWords = alignWordsToText(orig.words, frText, orig.start, orig.end);
+            const viWords = alignWordsToText(frWords, viText, orig.start, orig.end);
             return {
               time: orig.time,
               start: orig.start,
@@ -1289,6 +1432,9 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
               speaker: (aiRow.speaker || orig.speaker || '').trim(),
               fr: frText,
               vi: viText,
+              words: orig.words,
+              frWords,
+              viWords,
               subs: [{ start: orig.start, end: orig.end, text: frText, vi: viText }]
             };
           }
@@ -1298,15 +1444,17 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
 
       activeIndex = -1;
       activeSubIndex = -1;
+      activeFrWordIndex = -1;
+      activeViWordIndex = -1;
       renderOverlayStructure();
       applySavedOverlayPosition();
       renderTranscriptList();
       syncSubtitle(true);
       if (isPinned) savePinnedSession();
-      statusEl.textContent = `✨ Đã áp dụng ${currentTranscript.length} lượt thoại song ngữ Karaoke${isPinned ? ' (đã cập nhật bản ghim)' : ''}!`;
+      statusEl.textContent = `✨ Đã áp dụng ${currentTranscript.length} lượt thoại song ngữ Karaoke từng từ${isPinned ? ' (đã cập nhật bản ghim)' : ''}!`;
     });
 
-    // --- TRÌNH PHÁT YOUTUBE & ĐỒNG BỘ KARAOKE ---
+    // --- TRÌNH PHÁT YOUTUBE & ĐỒNG BỘ KARAOKE TỪNG TỪ ---
     function loadYouTubeVideo(videoId, startSec = 0) {
       if (ytPlayer?.loadVideoById) {
         ytPlayer.loadVideoById({ videoId, startSeconds: Math.floor(startSec || 0) });
@@ -1355,7 +1503,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
           </div>
         `;
         div.onclick = (e) => {
-          const kSpan = e.target.closest('.k-seg');
+          const kSpan = e.target.closest('.k-word, .k-seg');
           const targetTime = kSpan ? Number(kSpan.dataset.start) : item.start;
           seekTo(targetTime);
         };
@@ -1371,13 +1519,47 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       }
     }
 
-    function updateKaraokeHighlight(blockIdx, subIdx) {
-      document.querySelectorAll('.k-seg.active').forEach(el => el.classList.remove('active'));
-      if (blockIdx === -1 || subIdx === -1) return;
+    function findActiveWordIndex(wordsArr, currentTime) {
+      if (!Array.isArray(wordsArr) || !wordsArr.length) return -1;
+      for (let i = 0; i < wordsArr.length; i++) {
+        const w = wordsArr[i];
+        const nextStart = (i + 1 < wordsArr.length) ? wordsArr[i + 1].start : w.end;
+        const effectiveEnd = Math.max(w.end, nextStart);
+        if (currentTime >= w.start && currentTime <= effectiveEnd + 0.03) {
+          return i;
+        }
+      }
+      return -1;
+    }
 
-      document.querySelectorAll(`#subtitleBox .k-seg[data-k="${subIdx}"]`).forEach(el => el.classList.add('active'));
-      document.querySelectorAll(`.k-seg[data-v-idx="${blockIdx}"][data-k="${subIdx}"]`).forEach(el => el.classList.add('active'));
-      document.querySelectorAll(`.k-seg[data-l-idx="${blockIdx}"][data-k="${subIdx}"]`).forEach(el => el.classList.add('active'));
+    function updateKaraokeHighlight(blockIdx, subIdx, frWordIdx = -1, viWordIdx = -1) {
+      document.querySelectorAll('.k-seg.active, .k-word.active').forEach(el => el.classList.remove('active'));
+      if (blockIdx === -1) return;
+
+      if (frWordIdx !== -1) {
+        document.querySelectorAll(`#subtitleBox .sub-fr .k-word[data-w="${frWordIdx}"]`).forEach(el => el.classList.add('active'));
+        document.querySelectorAll(`.v-fr .k-word[data-v-idx="${blockIdx}"][data-w="${frWordIdx}"]`).forEach(el => el.classList.add('active'));
+        document.querySelectorAll(`.line-fr .k-word[data-l-idx="${blockIdx}"][data-w="${frWordIdx}"]`).forEach(el => el.classList.add('active'));
+      }
+
+      if (viWordIdx !== -1) {
+        document.querySelectorAll(`#subtitleBox .sub-vi .k-word[data-w="${viWordIdx}"]`).forEach(el => el.classList.add('active'));
+        document.querySelectorAll(`.v-vi .k-word[data-v-idx="${blockIdx}"][data-w="${viWordIdx}"]`).forEach(el => el.classList.add('active'));
+        document.querySelectorAll(`.line-vi .k-word[data-l-idx="${blockIdx}"][data-w="${viWordIdx}"]`).forEach(el => el.classList.add('active'));
+      }
+
+      if (subIdx !== -1) {
+        if (frWordIdx === -1) {
+          document.querySelectorAll(`#subtitleBox .sub-fr .k-seg[data-k="${subIdx}"]`).forEach(el => el.classList.add('active'));
+          document.querySelectorAll(`.v-fr .k-seg[data-v-idx="${blockIdx}"][data-k="${subIdx}"]`).forEach(el => el.classList.add('active'));
+          document.querySelectorAll(`.line-fr .k-seg[data-l-idx="${blockIdx}"][data-k="${subIdx}"]`).forEach(el => el.classList.add('active'));
+        }
+        if (viWordIdx === -1) {
+          document.querySelectorAll(`#subtitleBox .sub-vi .k-seg[data-k="${subIdx}"]`).forEach(el => el.classList.add('active'));
+          document.querySelectorAll(`.v-vi .k-seg[data-v-idx="${blockIdx}"][data-k="${subIdx}"]`).forEach(el => el.classList.add('active'));
+          document.querySelectorAll(`.line-vi .k-seg[data-l-idx="${blockIdx}"][data-k="${subIdx}"]`).forEach(el => el.classList.add('active'));
+        }
+      }
     }
 
     function syncSubtitle(forceRender = false) {
@@ -1398,6 +1580,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         }
         activeIndex = idx;
         activeSubIndex = -1;
+        activeFrWordIndex = -1;
+        activeViWordIndex = -1;
 
         if (subLayout === 'horizontal') {
           const box = document.getElementById('subtitleBox');
@@ -1438,14 +1622,21 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       }
 
       let subIdx = -1;
+      let frWordIdx = -1;
+      let viWordIdx = -1;
       if (idx !== -1) {
-        const subs = currentTranscript[idx].subs || [];
+        const curItem = currentTranscript[idx];
+        const subs = curItem.subs || [];
         subIdx = subs.findIndex(s => currentTime >= s.start && currentTime <= s.end);
+        frWordIdx = findActiveWordIndex(curItem.frWords, currentTime);
+        viWordIdx = findActiveWordIndex(curItem.viWords, currentTime);
       }
 
-      if (turnChanged || subIdx !== activeSubIndex) {
+      if (turnChanged || subIdx !== activeSubIndex || frWordIdx !== activeFrWordIndex || viWordIdx !== activeViWordIndex) {
         activeSubIndex = subIdx;
-        updateKaraokeHighlight(idx, subIdx);
+        activeFrWordIndex = frWordIdx;
+        activeViWordIndex = viWordIdx;
+        updateKaraokeHighlight(idx, subIdx, frWordIdx, viWordIdx);
       }
     }
 
@@ -1486,13 +1677,13 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         populateExportBox(currentVideoId, baseTranscript);
         loadYouTubeVideo(currentVideoId, lastSavedTime);
 
-        statusEl.textContent = `📌 Đã khôi phục video đang ghim [${currentVideoId}] (${currentTranscript.length} dòng phụ đề).`;
+        statusEl.textContent = `📌 Đã khôi phục video đang ghim [${currentVideoId}] (${currentTranscript.length} câu phụ đề).`;
       } catch (e) {
         console.warn('Lỗi đọc dữ liệu ghim:', e);
       }
     });
 
-    setInterval(syncSubtitle, 100);
+    setInterval(syncSubtitle, 50);
   </script>
 </body>
 </html>
