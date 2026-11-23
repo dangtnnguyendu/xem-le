@@ -95,7 +95,7 @@
 
     #ytPlayer { width: 100%; height: 100%; display: block; }
 
-    /* Trong toàn màn hình: giữ khung iframe đúng tỷ lệ 16:9 sát mép trên để YouTube không tạo dải đen trên, dồn toàn bộ khoảng trống xuống dưới */
+    /* Trong toàn màn hình: giữ khung iframe đúng tỷ lệ 16:9 sát mép trên */
     .video-wrapper.pseudo-fs #ytPlayer,
     .video-wrapper:fullscreen #ytPlayer,
     .video-wrapper:-webkit-full-screen #ytPlayer {
@@ -115,55 +115,72 @@
     /* Nhãn tên nhân vật */
     .speaker-badge {
       display: inline-block;
-      background: rgba(255, 152, 0, 0.22);
+      background: rgba(255, 152, 0, 0.24);
       color: #ffcc80;
       border: 1px solid rgba(255, 183, 77, 0.35);
       font-size: 10px;
       font-weight: 700;
       padding: 1px 6px;
       border-radius: 4px;
-      margin-bottom: 2px;
+      margin-right: 6px;
       letter-spacing: 0.3px;
-    }
-    .subtitle-overlay.mode-horizontal .speaker-badge {
-      display: block;
-      width: fit-content;
-      margin: 0 auto 2px;
-    }
-    .v-speaker {
-      display: inline-block;
-      color: #ffcc80;
-      font-size: 9px;
-      font-weight: 700;
-      margin-bottom: 1px;
+      vertical-align: middle;
     }
 
-    /* Hiệu ứng Karaoke: Mặc định trắng, đoạn đang nói bôi vàng đậm cho ngoại ngữ & đỏ cho tiếng Việt */
-    .k-seg {
+    /* --- HIỂN THỊ 2 CÂU / LƯỢT: TÔ ĐẬM HẲN 1 CÂU ĐANG NÓI --- */
+    .sub-pair-line {
+      padding: 4px 8px;
+      border-radius: 6px;
+      border-left: 3px solid transparent;
+      transition: background-color 0.08s ease, border-color 0.08s ease, opacity 0.08s ease;
+    }
+    .sub-pair-line + .sub-pair-line {
+      margin-top: 5px;
+      padding-top: 5px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    /* Câu đang nói: Tô đậm hẳn cả câu cho đến hết câu */
+    .sub-pair-line.is-active {
+      opacity: 1;
+      background: rgba(255, 193, 7, 0.16);
+      border-left-color: #ffd54f;
+    }
+    .sub-pair-line.is-active .sub-fr,
+    .sub-pair-line.is-active .v-fr {
+      color: #ffd54f;
+      font-weight: 800;
+    }
+    .sub-pair-line.is-active .sub-vi,
+    .sub-pair-line.is-active .v-vi {
       color: #ffffff;
-      transition: color 0.1s ease;
-    }
-    .k-seg.active,
-    .sub-fr .k-seg.active,
-    .v-fr .k-seg.active,
-    .line-fr .k-seg.active {
-      color: #ffb300;
-    }
-    .sub-vi .k-seg.active,
-    .v-vi .k-seg.active,
-    .line-vi .k-seg.active {
-      color: #ff3b30;
+      font-weight: 700;
     }
 
-    /* --- CHẾ ĐỘ PHỤ ĐỀ 1: NẰM NGANG (NỀN ĐEN TRONG SUỐT, KHÔNG BLUR, KÉO THẢ TỰ DO) --- */
+    /* Câu còn lại trong cặp 2 câu: Chữ mảnh, dịu mắt */
+    .sub-pair-line.is-inactive {
+      opacity: 0.62;
+    }
+    .sub-pair-line.is-inactive .sub-fr,
+    .sub-pair-line.is-inactive .v-fr {
+      color: #e6e6e6;
+      font-weight: 400;
+    }
+    .sub-pair-line.is-inactive .sub-vi,
+    .sub-pair-line.is-inactive .v-vi {
+      color: #bdbdbd;
+      font-weight: 400;
+    }
+
+    /* --- CHẾ ĐỘ PHỤ ĐỀ 1: NẰM NGANG --- */
     .subtitle-overlay.mode-horizontal {
       position: absolute;
-      bottom: 46px;
+      bottom: 44px;
       left: 50%;
       transform: translateX(-50%);
       width: max-content;
       max-width: 94%;
-      text-align: center;
+      text-align: left;
       pointer-events: auto;
       touch-action: none;
       cursor: grab;
@@ -171,7 +188,6 @@
       -webkit-user-select: none;
       z-index: 20;
     }
-    /* Trong toàn màn hình: đặt mặc định phụ đề ngang nằm gọn trong dải đen bên dưới để không che hình */
     .video-wrapper.pseudo-fs .subtitle-overlay.mode-horizontal,
     .video-wrapper:fullscreen .subtitle-overlay.mode-horizontal,
     .video-wrapper:-webkit-full-screen .subtitle-overlay.mode-horizontal {
@@ -183,17 +199,17 @@
     }
     .subtitle-overlay.mode-horizontal .subtitle-box {
       display: inline-block;
-      background: rgba(0, 0, 0, 0.36);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      padding: 6px 14px;
-      border-radius: 8px;
-      line-height: 1.36;
+      background: rgba(0, 0, 0, 0.54);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      padding: 7px 12px;
+      border-radius: 9px;
+      line-height: 1.38;
       max-width: 100%;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 6px rgba(0, 0, 0, 0.8);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 6px rgba(0, 0, 0, 0.85);
     }
     .subtitle-overlay.mode-horizontal .subtitle-box:empty { display: none; }
-    .sub-fr { color: #ffffff; font-size: 15.5px; font-weight: 600; }
-    .sub-vi { color: #ffffff; font-size: 13.5px; font-weight: 500; margin-top: 2px; }
+    .sub-fr { font-size: 15.5px; }
+    .sub-vi { font-size: 13.5px; margin-top: 2px; }
 
     .video-wrapper.pseudo-fs .mode-horizontal .sub-fr,
     .video-wrapper:fullscreen .mode-horizontal .sub-fr,
@@ -202,16 +218,16 @@
     .video-wrapper:fullscreen .mode-horizontal .sub-vi,
     .video-wrapper:-webkit-full-screen .mode-horizontal .sub-vi { font-size: 17px; }
 
-    /* --- CHẾ ĐỘ PHỤ ĐỀ 2: NẰM DỌC (NỀN ĐEN TRONG SUỐT, KHÔNG BLUR, CÓ THANH KÉO THẢ) --- */
+    /* --- CHẾ ĐỘ PHỤ ĐỀ 2: NẰM DỌC (CŨNG HIỂN THỊ 2 CÂU / LƯỢT) --- */
     .subtitle-overlay.mode-vertical {
       position: absolute;
       top: 8px;
       right: 8px;
-      height: calc(100% - 54px);
-      width: 17%;
-      min-width: 135px;
-      background: rgba(0, 0, 0, 0.34);
-      border: 1px solid rgba(255, 255, 255, 0.14);
+      width: 22%;
+      min-width: 155px;
+      max-height: calc(100% - 54px);
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.16);
       border-radius: 8px;
       display: flex;
       flex-direction: column;
@@ -221,14 +237,14 @@
       text-align: left;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
     }
-    .subtitle-overlay.mode-vertical:empty { display: none; }
+    .subtitle-overlay.mode-vertical.is-empty { display: none; }
 
     .v-drag-handle {
       flex-shrink: 0;
       padding: 3px 6px;
-      background: rgba(0, 0, 0, 0.45);
+      background: rgba(0, 0, 0, 0.5);
       border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-      color: rgba(255, 255, 255, 0.72);
+      color: rgba(255, 255, 255, 0.75);
       font-size: 9.5px;
       font-weight: 600;
       text-align: center;
@@ -244,8 +260,7 @@
     }
 
     .v-sub-list {
-      flex: 1;
-      padding: 5px;
+      padding: 6px;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
     }
@@ -253,54 +268,27 @@
     .video-wrapper.pseudo-fs .subtitle-overlay.mode-vertical,
     .video-wrapper:fullscreen .subtitle-overlay.mode-vertical,
     .video-wrapper:-webkit-full-screen .subtitle-overlay.mode-vertical {
-      width: 12.5%;
-      min-width: 120px;
-      height: calc(100% - 28px);
+      width: 18%;
+      min-width: 145px;
     }
 
-    .v-sub-item {
-      padding: 4px 5px;
-      margin-bottom: 4px;
-      border-radius: 5px;
-      cursor: pointer;
-      opacity: 0.75;
-      border-left: 2px solid transparent;
-      transition: background 0.15s, opacity 0.15s;
-    }
-    .v-sub-item:active { background: rgba(255, 255, 255, 0.12); }
-    .v-sub-item.active {
-      opacity: 1;
-      background: rgba(255, 179, 0, 0.14);
-      border-left: 2px solid rgba(255, 179, 0, 0.9);
-    }
-    .v-time {
-      display: block;
-      font-size: 8.5px;
-      font-family: monospace;
-      color: #bdbdbd;
-      margin-bottom: 1px;
-    }
     .v-fr {
-      color: #ffffff;
-      font-size: 10px;
-      font-weight: 600;
-      line-height: 1.3;
+      font-size: 11px;
+      line-height: 1.32;
       word-break: break-word;
     }
     .v-vi {
-      color: #ffffff;
-      font-size: 9.5px;
-      font-weight: 400;
-      line-height: 1.28;
+      font-size: 10px;
+      line-height: 1.3;
       margin-top: 2px;
       word-break: break-word;
     }
     .video-wrapper.pseudo-fs .v-fr,
     .video-wrapper:fullscreen .v-fr,
-    .video-wrapper:-webkit-full-screen .v-fr { font-size: 11px; }
+    .video-wrapper:-webkit-full-screen .v-fr { font-size: 12px; }
     .video-wrapper.pseudo-fs .v-vi,
     .video-wrapper:fullscreen .v-vi,
-    .video-wrapper:-webkit-full-screen .v-vi { font-size: 10px; }
+    .video-wrapper:-webkit-full-screen .v-vi { font-size: 11px; }
 
     .floating-controls {
       position: absolute;
@@ -312,17 +300,17 @@
       transition: right 0.2s;
     }
     .video-wrapper.has-vertical-sub .floating-controls {
-      right: calc(17% + 16px);
+      right: calc(22% + 16px);
     }
     .video-wrapper.pseudo-fs.has-vertical-sub .floating-controls,
     .video-wrapper:fullscreen.has-vertical-sub .floating-controls,
     .video-wrapper:-webkit-full-screen.has-vertical-sub .floating-controls {
-      right: calc(12.5% + 18px);
+      right: calc(18% + 18px);
     }
     .floating-btn {
-      background: rgba(0, 0, 0, 0.42);
+      background: rgba(0, 0, 0, 0.46);
       color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.22);
       padding: 6px 10px;
       font-size: 12px;
       border-radius: 6px;
@@ -347,14 +335,18 @@
       gap: 12px;
       font-size: 14.5px;
       border-bottom: 1px solid #262626;
+      border-left: 3px solid transparent;
     }
     .line:active, .line:hover { background: #2a2a2a; }
-    .line.active { background: #332b00; }
-    .line-fr { color: #ffffff; }
-    .line.active .line-fr { font-weight: 600; }
+    .line.active {
+      background: #332b00;
+      border-left-color: #ffd54f;
+    }
+    .line-fr { color: #e6e6e6; font-weight: 400; }
+    .line.active .line-fr { color: #ffd54f; font-weight: 800; }
     .time { color: #888; min-width: 48px; font-family: monospace; padding-top: 2px; font-size: 12.5px; }
-    .line-vi { color: #ffffff; font-size: 13.5px; margin-top: 4px; opacity: 0.92; }
-    .line.active .line-vi { opacity: 1; }
+    .line-vi { color: #cfcfcf; font-size: 13.5px; margin-top: 4px; font-weight: 400; }
+    .line.active .line-vi { color: #ffffff; font-weight: 700; }
 
     .ai-grid {
       display: grid;
@@ -395,7 +387,7 @@
         <div class="row">
           <input type="text" id="ytUrlInput" placeholder="Dán link YouTube (vd: https://youtu.be/... hoặc https://www.youtube.com/watch?v=...)">
         </div>
-        <textarea id="rawTranscriptInput" placeholder="Dán bản chép lời copy từ YouTube (0:00 Bonjour...), hoặc từ Userscripts, hoặc nội dung file .srt vào đây..."></textarea>
+        <textarea id="rawTranscriptInput" placeholder="Dán bản chép lời mili-giây (start|end|từ), hoặc từ YouTube (0:00 Bonjour...), hoặc nội dung file .srt vào đây..."></textarea>
         <div class="row">
           <button type="button" class="btn-green" id="playSingleBtn">▶ Phát ngay</button>
           <button type="button" class="btn-gray" id="resetAllBtn">↺ Làm mới phiên xem</button>
@@ -411,7 +403,7 @@
       <button type="button" class="btn-yellow" id="toggleFsBtn">⛶ Toàn màn hình</button>
     </div>
 
-    <div id="status">Sẵn sàng — Dán link YouTube và bản chép lời ở trên rồi bấm "▶ Phát ngay". (Chạm và kéo khung phụ đề để đặt vị trí tùy ý)</div>
+    <div id="status">Sẵn sàng — Hiển thị 2 câu/lượt (ngăn cách theo dấu chấm), tô đậm hẳn 1 câu đang nói cho đến hết câu.</div>
   </div>
 
   <!-- KHUNG PHÁT VIDEO -->
@@ -441,7 +433,7 @@
         <span>2. Dán JSON song ngữ từ AI</span>
         <button type="button" class="btn-green" id="applySubBtn">✨ Áp dụng phụ đề</button>
       </div>
-      <textarea id="importBox" placeholder='Dán mảng JSON [{"from_i": 0, "to_i": 1, "speaker": "...", "fr": "...", "vi": "..."}] từ AI vào đây rồi bấm Áp dụng...'></textarea>
+      <textarea id="importBox" placeholder='Dán mảng JSON [{"from_i": 0, "to_i": 0, "speaker": "...", "fr": "...", "vi": "..."}] từ AI vào đây rồi bấm Áp dụng...'></textarea>
     </div>
   </div>
 
@@ -449,23 +441,23 @@
   <div class="transcript-box" id="transcriptBox"></div>
 
   <script>
-    const AI_PROMPT = `Bạn là chuyên gia biên tập và dịch thuật phụ đề song ngữ Pháp - Việt cho video hội thoại.
-Dưới đây là link video và mảng JSON chứa bản chép lời tiếng Pháp kèm mốc thời gian.
+    const AI_PROMPT = `Bạn là chuyên gia biên tập và dịch thuật phụ đề song ngữ Pháp - Việt cho video.
+Dưới đây là link video và mảng JSON chứa các câu tiếng Pháp đã được tách theo dấu chấm kèm mốc thời gian chuẩn mili-giây.
 
 NHIỆM VỤ CỦA BẠN:
-1. Gộp câu theo từng lượt nói / suy nghĩ của nhân vật:
-  - Gộp các mảnh liên tiếp thuộc cùng một nhân vật thành một đoạn hoàn chỉnh.
-  - Nếu một dòng bị dính lời của 2 nhân vật khác nhau (hoặc dính lời thoại và lời dẫn chuyện), hãy tách thành 2 phần tử riêng biệt và dùng chung chỉ số "from_i" / "to_i" tại điểm giao nhau.
-  - Nếu một nhân vật nói quá dài (trên 3 câu), hãy ngắt thành các đoạn ngắn tự nhiên (1-3 câu/đoạn) để dễ đọc trên màn hình.
+1. Giữ nguyên cấu trúc mỗi phần tử là ĐÚNG 1 CÂU (ngăn cách bởi dấu chấm "."):
+  - Giữ đúng chỉ số "from_i" và "to_i" tương ứng với từng câu.
+  - Chỉ tách thêm phần tử (dùng chung chỉ số "from_i" / "to_i") nếu một mục gốc bị dính 2 câu ngăn cách bởi dấu chấm hoặc 2 nhân vật khác nhau.
+  - Chỉ gộp 2 mục liên tiếp ("from_i" -> "to_i") nếu một câu bị ngắt nhầm dấu chấm ở giữa (ví dụ từ viết tắt).
 2. Xác định người nói ("speaker"):
-  - Ghi rõ tên nhân vật hoặc vai trò đang nói (nếu không rõ tên có thể để trống "").
+  - Ghi rõ tên nhân vật hoặc vai trò đang nói (nếu không rõ có thể để trống "").
 3. Đánh bóng tiếng Pháp ("fr") & Dịch tiếng Việt ("vi"):
-  - Sửa lỗi chính tả, thêm dấu câu chuẩn ngữ pháp tiếng Pháp.
+  - Sửa lỗi chính tả nếu có, giữ dấu câu chuẩn tiếng Pháp.
   - Dịch sang tiếng Việt tự nhiên, đúng ngữ cảnh. Không dùng dấu ngoặc kép (") bên trong chuỗi dịch, thay bằng « ».
 
 ĐỊNH DẠNG ĐẦU RA BẮT BUỘC (Chỉ trả về duy nhất 1 khối JSON hợp lệ):
 [
-  {"from_i": 0, "to_i": 1, "speaker": "Tên nhân vật", "fr": "Đoạn tiếng Pháp hoàn chỉnh.", "vi": "Đoạn dịch tiếng Việt tương ứng."}
+  {"from_i": 0, "to_i": 0, "speaker": "Tên nhân vật", "fr": "Một câu tiếng Pháp hoàn chỉnh kết thúc bằng dấu chấm.", "vi": "Câu dịch tiếng Việt tương ứng."}
 ]
 
 DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
@@ -476,7 +468,10 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     let baseTranscript = [];
     let currentTranscript = [];
     let activeIndex = -1;
-    let activeSubIndex = -1;
+    let renderedPairStart = -1;
+    let lastActiveIndex = -1;
+    let lastActiveEnd = -999;
+
     let ytPlayer = null;
     let showFr = true;
     let showVi = true;
@@ -484,11 +479,10 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     let isPinned = false;
     let lastSavedTime = 0;
 
-    // Lưu riêng vị trí kéo thả cho chế độ thường, toàn màn hình và phụ đề dọc
     let customSubPos = {
-      horizontal: null,   // { leftRatio, topRatio } khi xem thường
-      horizontalFs: null, // { leftRatio, topRatio } khi toàn màn hình
-      vertical: null      // { leftRatio, topRatio }
+      horizontal: null,
+      horizontalFs: null,
+      vertical: null
     };
 
     const videoWrapper = document.getElementById('videoWrapper');
@@ -514,7 +508,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       return isVideoFullscreen() ? 'horizontalFs' : 'horizontal';
     }
 
-    // --- KÉO THẢ DI ĐỘNG KHUNG PHỤ ĐỀ (CẢ CẢM ỨNG IPAD & CHUỘT) ---
+    // --- KÉO THẢ DI ĐỘNG KHUNG PHỤ ĐỀ ---
     let dragState = null;
     let lastTapTime = 0;
 
@@ -562,12 +556,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     }
 
     function getClientPoint(e) {
-      if (e.touches && e.touches.length > 0) {
-        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      }
-      if (e.changedTouches && e.changedTouches.length > 0) {
-        return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
-      }
+      if (e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      if (e.changedTouches && e.changedTouches.length > 0) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
       return { x: e.clientX, y: e.clientY };
     }
 
@@ -578,7 +568,6 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         if (!e.target.closest('.v-drag-handle')) return;
       }
 
-      // Chạm đúp (double-tap / double-click) để đưa phụ đề về vị trí mặc định (nằm gọn trong dải đen dưới khi toàn màn hình)
       const now = Date.now();
       if (now - lastTapTime < 300) {
         lastTapTime = 0;
@@ -646,9 +635,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       const wasMoved = dragState.moved;
       dragState = null;
       videoWrapper.classList.remove('dragging-sub');
-      if (wasMoved && isPinned) {
-        savePinnedSession();
-      }
+      if (wasMoved && isPinned) savePinnedSession();
     }
 
     subtitleOverlay.addEventListener('touchstart', startSubDrag, { passive: false });
@@ -660,7 +647,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     window.addEventListener('mouseup', endSubDrag);
     window.addEventListener('resize', clampOverlayInBounds);
 
-    // --- TÍNH NĂNG GHIM VIDEO ĐANG XEM (CHỐNG MẤT KHI THOÁT / RELOAD SAFARI) ---
+    // --- TÍNH NĂNG GHIM VIDEO ĐANG XEM ---
     function updatePinBtnUI() {
       if (!currentVideoId) {
         pinBtn.disabled = true;
@@ -724,7 +711,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       }
     });
 
-    // --- TÁCH ID YOUTUBE & PHÂN TÍCH CÁC ĐỊNH DẠNG BẢN CHÉP LỜI ---
+    // --- TÁCH ID YOUTUBE & PHÂN TÍCH BẢN CHÉP LỜI THEO DẤU CHẤM ---
     function extractYouTubeId(input) {
       const val = (input || '').trim();
       if (!val) return '';
@@ -749,6 +736,26 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       return `${m}:${String(s).padStart(2, '0')}`;
     }
 
+    const ABBREV_RE = /^(?:M|Mr|Mme|Mlle|Dr|Prof|St|Ste|Mgr|Me|etc|cf|ex|vol|p|pp|fig|chap|art|al|av|bd|env|max|min|tel|tél|n°)\.$/i;
+
+    function isPeriodSentenceEnd(word, nextWord) {
+      const cleaned = word.replace(/[»"”')\]}]+$/g, '');
+      if (!cleaned.endsWith('.')) return false;
+      if (cleaned.endsWith('...')) return true;
+      if (ABBREV_RE.test(cleaned)) return false;
+      if (/^[A-ZÀ-Ý]\.$/.test(cleaned) && nextWord && /^[A-ZÀ-Ý]/.test(nextWord)) return false;
+      return true;
+    }
+
+    function joinFrenchWords(wordsArr) {
+      return wordsArr
+        .map(w => w.word)
+        .join(' ')
+        .replace(/\s+([,.;:!?…»])/g, '$1')
+        .replace(/(«)\s+/g, '$1')
+        .trim();
+    }
+
     function parseRawPastedTranscript(rawText) {
       const text = (rawText || '').replace(/\r/g, '').trim();
       if (!text) return [];
@@ -764,7 +771,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
               end: Number(it.end) || (Number(it.start) || 0) + 3,
               speaker: (it.speaker || '').trim(),
               fr: (it.fr || it.text || '').trim(),
-              vi: (it.vi || '').trim()
+              vi: (it.vi || '').trim(),
+              words: Array.isArray(it.words) ? it.words : []
             })).filter(x => x.fr);
           }
         } catch {}
@@ -772,18 +780,57 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
 
       const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
-      // 2. Định dạng từ Userscripts / Bookmarklet: "start|end|text"
+      // 2. Định dạng từng từ theo mili-giây: "start|end|từ" -> Gom thành các câu ngăn cách bởi dấu chấm (.)
       if (lines.length && /^\d+(\.\d+)?\|\d+(\.\d+)?\|/.test(lines[0])) {
-        return lines.map(line => {
+        const rawWords = [];
+        for (const line of lines) {
           const parts = line.split('|');
-          const start = Number(parts[0]) || 0;
-          const end = Number(parts[1]) || (start + 2.5);
-          const fr = parts.slice(2).join('|').trim();
-          return { time: formatClockTime(start), start, end, fr, vi: '' };
-        }).filter(x => x.fr);
+          if (parts.length < 3) continue;
+          const start = Number(parts[0]);
+          const end = Number(parts[1]);
+          const word = parts.slice(2).join('|').trim();
+          if (!word || Number.isNaN(start) || Number.isNaN(end)) continue;
+          rawWords.push({
+            start,
+            end: Math.max(start + 0.02, end),
+            word
+          });
+        }
+        if (!rawWords.length) return [];
+
+        const sentences = [];
+        let bucket = [];
+
+        function flushSentence() {
+          if (!bucket.length) return;
+          const sStart = bucket[0].start;
+          const sEnd = Math.max(sStart + 0.1, bucket[bucket.length - 1].end);
+          sentences.push({
+            time: formatClockTime(sStart),
+            start: Number(sStart.toFixed(3)),
+            end: Number(sEnd.toFixed(3)),
+            speaker: '',
+            fr: joinFrenchWords(bucket),
+            vi: '',
+            words: bucket.slice()
+          });
+          bucket = [];
+        }
+
+        for (let i = 0; i < rawWords.length; i++) {
+          const curW = rawWords[i];
+          const nextWordText = i + 1 < rawWords.length ? rawWords[i + 1].word : '';
+          bucket.push(curW);
+
+          if (isPeriodSentenceEnd(curW.word, nextWordText)) {
+            flushSentence();
+          }
+        }
+        flushSentence();
+        return sentences;
       }
 
-      // 3. Định dạng phụ đề .SRT: "00:00:01,000 --> 00:00:04,200"
+      // 3. Định dạng phụ đề .SRT
       const srtTimeRe = /^(\d{1,2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*(\d{1,2}):(\d{2}):(\d{2})[,.](\d{3})/;
       if (lines.some(l => srtTimeRe.test(l))) {
         const result = [];
@@ -794,7 +841,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
             if (cur && cur.fr) result.push(cur);
             const start = Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) + Number(m[4]) / 1000;
             const end = Number(m[5]) * 3600 + Number(m[6]) * 60 + Number(m[7]) + Number(m[8]) / 1000;
-            cur = { time: formatClockTime(start), start: Number(start.toFixed(2)), end: Number(end.toFixed(2)), fr: '', vi: '' };
+            cur = { time: formatClockTime(start), start: Number(start.toFixed(3)), end: Number(end.toFixed(3)), speaker: '', fr: '', vi: '', words: [] };
           } else if (cur && !/^\d+$/.test(line)) {
             const clean = line.replace(/<[^>]+>/g, '').trim();
             cur.fr = cur.fr ? `${cur.fr} ${clean}` : clean;
@@ -804,7 +851,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         return result;
       }
 
-      // 4. Định dạng copy trực tiếp từ "Hiển thị bản chép lời" của YouTube ("0:00" hoặc "- 00:00" hoặc "[00:00]")
+      // 4. Định dạng copy trực tiếp từ bản chép lời YouTube ("0:00 ...")
       const ytTimeRe = /^[-•*\s[\](]*(?:(\d{1,2}):)?(\d{1,2}):(\d{2})[\])\-\s]*(.*)$/;
       const entries = [];
       let currentEntry = null;
@@ -821,8 +868,10 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
             time: formatClockTime(start),
             start,
             end: start + 4,
+            speaker: '',
             fr: (m[4] || '').trim(),
-            vi: ''
+            vi: '',
+            words: []
           };
         } else if (currentEntry) {
           currentEntry.fr = currentEntry.fr ? `${currentEntry.fr} ${line}` : line;
@@ -838,137 +887,6 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         }
       }
       return entries.filter(x => x.fr);
-    }
-
-    // --- TÁCH CÂU PHÁP & VIỆT THÀNH CÁC PHÂN ĐOẠN KARAOKE ĐỒNG BỘ ---
-    function findNearestWordBoundary(text, targetPos, minPos) {
-      if (targetPos <= minPos) return minPos;
-      if (targetPos >= text.length) return text.length;
-      if (text[targetPos] === ' ') return targetPos;
-
-      const maxSearch = 18;
-      for (let offset = 1; offset <= maxSearch; offset++) {
-        const right = targetPos + offset;
-        if (right < text.length && text[right] === ' ') return right;
-        const left = targetPos - offset;
-        if (left > minPos && text[left] === ' ') return left;
-      }
-      return targetPos;
-    }
-
-    function splitTextIntoExactParts(fullText, weights) {
-      const cleanText = (fullText || '').trim();
-      const count = Array.isArray(weights) ? weights.length : 0;
-      if (count <= 0) return [];
-      if (!cleanText) return new Array(count).fill('');
-      if (count === 1) return [cleanText];
-
-      const totalWeight = weights.reduce((sum, w) => sum + Math.max(1, w || 1), 0);
-      const parts = [];
-      let cursor = 0;
-      let cumWeight = 0;
-
-      for (let k = 0; k < count; k++) {
-        if (k === count - 1) {
-          parts.push(cleanText.slice(cursor).trim());
-        } else {
-          cumWeight += Math.max(1, weights[k] || 1);
-          const approxPos = Math.round((cumWeight / totalWeight) * cleanText.length);
-          const splitPos = findNearestWordBoundary(cleanText, approxPos, cursor);
-          parts.push(cleanText.slice(cursor, splitPos).trim());
-          cursor = splitPos;
-          while (cursor < cleanText.length && cleanText[cursor] === ' ') cursor++;
-        }
-      }
-      return parts;
-    }
-
-    function buildKaraokeSubs(frText, viText, subRanges, blockStart, blockEnd) {
-      const cleanFr = (frText || '').trim();
-      const cleanVi = (viText || '').trim();
-      if (!cleanFr && !cleanVi) return [];
-
-      if (!Array.isArray(subRanges) || subRanges.length <= 1) {
-        return [{ start: blockStart, end: blockEnd, text: cleanFr, vi: cleanVi }];
-      }
-
-      const weights = subRanges.map(s => Math.max(1, s.weight || 1));
-      const frRawParts = splitTextIntoExactParts(cleanFr, weights);
-      const mergedSubs = [];
-
-      for (let k = 0; k < subRanges.length; k++) {
-        const seg = subRanges[k];
-        const sliceFr = frRawParts[k] || '';
-
-        if (sliceFr || !cleanFr) {
-          mergedSubs.push({
-            start: Number(seg.start.toFixed(2)),
-            end: Number(seg.end.toFixed(2)),
-            text: sliceFr
-          });
-        } else if (mergedSubs.length > 0) {
-          mergedSubs[mergedSubs.length - 1].end = Number(seg.end.toFixed(2));
-        }
-      }
-
-      for (let k = 0; k < mergedSubs.length - 1; k++) {
-        if (mergedSubs[k + 1].start - mergedSubs[k].end < 0.35 && mergedSubs[k + 1].start >= mergedSubs[k].start) {
-          mergedSubs[k].end = mergedSubs[k + 1].start;
-        }
-      }
-
-      if (!mergedSubs.length) {
-        return [{ start: blockStart, end: blockEnd, text: cleanFr, vi: cleanVi }];
-      }
-
-      const viWeights = mergedSubs.map(s => (s.text || '').length || Math.max(0.1, s.end - s.start));
-      const viParts = splitTextIntoExactParts(cleanVi, viWeights);
-
-      return mergedSubs.map((s, idx) => ({
-        start: s.start,
-        end: s.end,
-        text: s.text,
-        vi: viParts[idx] || ''
-      }));
-    }
-
-    function prepareTranscriptKaraoke(list) {
-      list.forEach(block => {
-        const fr = (block.fr || block.text || '').trim();
-        const vi = (block.vi || '').trim();
-        if (!Array.isArray(block.subs) || !block.subs.length) {
-          block.subs = [{ start: block.start, end: block.end, text: fr, vi }];
-        }
-      });
-      return list;
-    }
-
-    function renderKaraokeFrHtml(item, scopeAttr = '') {
-      const fr = item.fr || item.text || '';
-      if (!fr) return '';
-      const subs = (Array.isArray(item.subs) && item.subs.length)
-        ? item.subs
-        : [{ start: item.start, end: item.end, text: fr }];
-
-      return subs.map((seg, k) => {
-        const segText = seg.text !== undefined ? seg.text : (k === 0 ? fr : '');
-        if (!segText) return '';
-        return `<span class="k-seg" ${scopeAttr} data-k="${k}" data-start="${seg.start}">${escapeHtml(segText)}</span>`;
-      }).filter(Boolean).join(' ');
-    }
-
-    function renderKaraokeViHtml(item, scopeAttr = '') {
-      const vi = item.vi || '';
-      if (!vi) return '';
-      const subs = (Array.isArray(item.subs) && item.subs.length)
-        ? item.subs
-        : [{ start: item.start, end: item.end, vi }];
-
-      return subs.map((seg, k) => {
-        const segVi = seg.vi !== undefined ? seg.vi : (k === 0 ? vi : '');
-        if (!segVi) return '';
-        return `<span class="k-seg" ${scopeAttr} data-k="${k}" data-start="${seg.start}">${escapeHtml(segVi)}</span>`;
-      }).filter(Boolean).join(' ');
     }
 
     // --- KHỞI CHẠY VIDEO LẺ & LÀM MỚI PHIÊN ---
@@ -994,9 +912,11 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
 
       currentVideoId = vidId;
       baseTranscript = JSON.parse(JSON.stringify(parsed));
-      currentTranscript = prepareTranscriptKaraoke(parsed);
+      currentTranscript = parsed;
       activeIndex = -1;
-      activeSubIndex = -1;
+      renderedPairStart = -1;
+      lastActiveIndex = -1;
+      lastActiveEnd = -999;
       importBox.value = '';
       updatePinBtnUI();
 
@@ -1006,7 +926,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       loadYouTubeVideo(vidId, 0);
 
       document.getElementById('inputDrawer').open = false;
-      statusEl.textContent = `▶ Đang phát [${vidId}] (${currentTranscript.length} dòng phụ đề). Toàn màn hình sẽ đẩy video sát lên trên để nhét phụ đề vào dải đen bên dưới.`;
+      statusEl.textContent = `▶ Đang phát [${vidId}] (${currentTranscript.length} câu theo dấu chấm — hiển thị 2 câu/lượt, tô đậm 1 câu đang nói).`;
     });
 
     document.getElementById('resetAllBtn').addEventListener('click', () => {
@@ -1019,7 +939,9 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       baseTranscript = [];
       currentTranscript = [];
       activeIndex = -1;
-      activeSubIndex = -1;
+      renderedPairStart = -1;
+      lastActiveIndex = -1;
+      lastActiveEnd = -999;
       customSubPos = { horizontal: null, horizontalFs: null, vertical: null };
       resetOverlayInlinePosition();
       updatePinBtnUI();
@@ -1033,7 +955,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     function applyLayoutMode() {
       const isVert = subLayout === 'vertical';
       subtitleOverlay.className = isVert
-        ? 'subtitle-overlay mode-vertical'
+        ? 'subtitle-overlay mode-vertical is-empty'
         : 'subtitle-overlay mode-horizontal';
       videoWrapper.classList.toggle('has-vertical-sub', isVert && !customSubPos.vertical);
 
@@ -1043,7 +965,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       renderOverlayStructure();
       applySavedOverlayPosition();
       activeIndex = -1;
-      activeSubIndex = -1;
+      renderedPairStart = -1;
       syncSubtitle(true);
       if (isPinned) savePinnedSession();
     }
@@ -1057,47 +979,44 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     floatingLayoutBtn.addEventListener('click', toggleLayoutMode);
 
     function renderOverlayStructure() {
+      renderedPairStart = -1;
       if (subLayout === 'horizontal') {
         subtitleOverlay.innerHTML = '<div id="subtitleBox" class="subtitle-box"></div>';
         return;
       }
 
-      subtitleOverlay.innerHTML = '';
-      if (!currentTranscript.length) return;
+      subtitleOverlay.innerHTML = `
+        <div class="v-drag-handle" title="Kéo để di chuyển khung phụ đề (chạm đúp để về góc mặc định)">⋮⋮ Kéo vị trí</div>
+        <div class="v-sub-list" id="vSubList"></div>
+      `;
+      subtitleOverlay.classList.add('is-empty');
+    }
 
-      const handle = document.createElement('div');
-      handle.className = 'v-drag-handle';
-      handle.title = 'Kéo để di chuyển khung phụ đề (chạm đúp để về góc mặc định)';
-      handle.textContent = '⋮⋮ Kéo vị trí';
-      subtitleOverlay.appendChild(handle);
+    // Dựng HTML hiển thị cặp 2 câu [pairStart, pairStart + 1], tô đậm hẳn 1 câu đang nói (highlightedIdx)
+    function buildTwoSentenceHtml(pairStart, highlightedIdx, isVertical) {
+      const frCls = isVertical ? 'v-fr' : 'sub-fr';
+      const viCls = isVertical ? 'v-vi' : 'sub-vi';
+      let html = '';
 
-      const listContainer = document.createElement('div');
-      listContainer.className = 'v-sub-list';
-      listContainer.id = 'vSubList';
-
-      currentTranscript.forEach((item, idx) => {
+      for (let offset = 0; offset < 2; offset++) {
+        const i = pairStart + offset;
+        if (i >= currentTranscript.length) break;
+        const item = currentTranscript[i];
         const fr = item.fr || item.text || '';
         const vi = item.vi || '';
-        const row = document.createElement('div');
-        row.className = 'v-sub-item';
-        row.id = 'vsub-' + idx;
+        const stateCls = (i === highlightedIdx) ? 'is-active' : 'is-inactive';
 
-        let inner = `<span class="v-time">${escapeHtml(item.time || item.start.toFixed(0) + 's')}</span>`;
-        if (item.speaker) inner += `<div class="v-speaker">${escapeHtml(item.speaker)}</div>`;
-        if (showFr && fr) inner += `<div class="v-fr">${renderKaraokeFrHtml(item, `data-v-idx="${idx}"`)}</div>`;
-        if (showVi && vi) inner += `<div class="v-vi">${renderKaraokeViHtml(item, `data-v-idx="${idx}"`)}</div>`;
-
-        row.innerHTML = inner;
-        row.onclick = (e) => {
-          e.stopPropagation();
-          const kSpan = e.target.closest('.k-seg');
-          const targetTime = kSpan ? Number(kSpan.dataset.start) : item.start;
-          seekTo(targetTime);
-        };
-        listContainer.appendChild(row);
-      });
-
-      subtitleOverlay.appendChild(listContainer);
+        html += `<div class="sub-pair-line ${stateCls}" data-pair-idx="${i}">`;
+        if (showFr && fr) {
+          html += `<div class="${frCls}">${item.speaker ? `<span class="speaker-badge">${escapeHtml(item.speaker)}</span>` : ''}${escapeHtml(fr)}</div>`;
+        }
+        if (showVi && vi) {
+          const spk = (!showFr && item.speaker) ? `<span class="speaker-badge">${escapeHtml(item.speaker)}</span>` : '';
+          html += `<div class="${viCls}">${spk}${escapeHtml(vi)}</div>`;
+        }
+        html += `</div>`;
+      }
+      return html;
     }
 
     // --- BẬT / TẮT PHỤ ĐỀ TỪNG NGÔN NGỮ ---
@@ -1114,9 +1033,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     toggleFrBtn.addEventListener('click', () => {
       showFr = !showFr;
       updateLangButtonsUI();
-      if (subLayout === 'vertical') renderOverlayStructure();
       activeIndex = -1;
-      activeSubIndex = -1;
+      renderedPairStart = -1;
       syncSubtitle(true);
       if (isPinned) savePinnedSession();
     });
@@ -1124,9 +1042,8 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     toggleViBtn.addEventListener('click', () => {
       showVi = !showVi;
       updateLangButtonsUI();
-      if (subLayout === 'vertical') renderOverlayStructure();
       activeIndex = -1;
-      activeSubIndex = -1;
+      renderedPairStart = -1;
       syncSubtitle(true);
       if (isPinned) savePinnedSession();
     });
@@ -1228,48 +1145,95 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
 
       if (typeof parsed[0].from_i === 'number') {
         const maxIdx = baseTranscript.length - 1;
-        currentTranscript = parsed.map((row, bIdx) => {
+
+        // Gom các nhóm dùng chung (from_i, to_i) để nội suy chính xác theo mốc từ nếu AI tách 1 câu thành nhiều câu
+        const groups = new Map();
+        parsed.forEach((row, bIdx) => {
           const fIdx = Math.max(0, Math.min(maxIdx, row.from_i));
           const tIdx = Math.max(fIdx, Math.min(maxIdx, typeof row.to_i === 'number' ? row.to_i : fIdx));
+          const key = `${fIdx}:${tIdx}`;
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push({ row, bIdx, fIdx, tIdx });
+        });
+
+        const resolved = new Array(parsed.length);
+        groups.forEach(items => {
+          const { fIdx, tIdx } = items[0];
           const firstLine = baseTranscript[fIdx];
           const lastLine = baseTranscript[tIdx];
 
-          let start = firstLine.start;
-          let end = lastLine.end;
-          const splitAtStart = bIdx > 0 && parsed[bIdx - 1].to_i === fIdx;
-          const splitAtEnd = bIdx < parsed.length - 1 && parsed[bIdx + 1].from_i === tIdx;
-
-          if (splitAtStart) start = (firstLine.start + firstLine.end) / 2;
-          if (splitAtEnd) end = (lastLine.start + lastLine.end) / 2;
-
-          const subRanges = [];
+          // Thu thập toàn bộ từ gốc có mốc mili-giây trong khoảng [fIdx .. tIdx]
+          const allWords = [];
           for (let k = fIdx; k <= tIdx; k++) {
-            const origLine = baseTranscript[k];
-            let s = origLine.start;
-            let e = origLine.end;
-            let weight = (origLine.fr || origLine.text || '').length || 1;
-
-            if (k === fIdx && splitAtStart) { s = start; weight *= 0.5; }
-            if (k === tIdx && splitAtEnd) { e = end; weight *= 0.5; }
-            if (e < s) e = s;
-            subRanges.push({ start: s, end: e, weight });
+            if (Array.isArray(baseTranscript[k].words) && baseTranscript[k].words.length) {
+              allWords.push(...baseTranscript[k].words);
+            }
           }
 
-          const frText = (row.fr || '').trim();
-          const viText = (row.vi || '').trim();
-          const blockStart = Number(start.toFixed(2));
-          const blockEnd = Number(end.toFixed(2));
+          if (items.length === 1) {
+            const { row, bIdx } = items[0];
+            resolved[bIdx] = {
+              time: firstLine.time || '',
+              start: Number(firstLine.start.toFixed(3)),
+              end: Number(lastLine.end.toFixed(3)),
+              speaker: (row.speaker || '').trim(),
+              fr: (row.fr || '').trim(),
+              vi: (row.vi || '').trim(),
+              words: allWords
+            };
+          } else if (allWords.length >= items.length) {
+            const totalChars = items.reduce((s, it) => s + Math.max(1, (it.row.fr || '').length), 0);
+            let wordCursor = 0;
+            let cumChars = 0;
 
-          return {
-            time: firstLine.time || '',
-            start: blockStart,
-            end: blockEnd,
-            speaker: (row.speaker || '').trim(),
-            fr: frText,
-            vi: viText,
-            subs: buildKaraokeSubs(frText, viText, subRanges, blockStart, blockEnd)
-          };
+            items.forEach((it, idx) => {
+              const wStartIdx = wordCursor;
+              let wEndIdx;
+              if (idx === items.length - 1) {
+                wEndIdx = allWords.length - 1;
+              } else {
+                cumChars += Math.max(1, (it.row.fr || '').length);
+                const targetEnd = Math.round((cumChars / totalChars) * allWords.length) - 1;
+                const remaining = items.length - 1 - idx;
+                wEndIdx = Math.max(wStartIdx, Math.min(allWords.length - 1 - remaining, targetEnd));
+              }
+              wordCursor = wEndIdx + 1;
+
+              const s = allWords[wStartIdx].start;
+              const e = allWords[wEndIdx].end;
+              resolved[it.bIdx] = {
+                time: formatClockTime(s),
+                start: Number(s.toFixed(3)),
+                end: Number(e.toFixed(3)),
+                speaker: (it.row.speaker || '').trim(),
+                fr: (it.row.fr || '').trim(),
+                vi: (it.row.vi || '').trim(),
+                words: allWords.slice(wStartIdx, wEndIdx + 1)
+              };
+            });
+          } else {
+            const spanStart = firstLine.start;
+            const spanEnd = lastLine.end;
+            const totalChars = items.reduce((s, it) => s + Math.max(1, (it.row.fr || '').length), 0);
+            let cur = spanStart;
+            items.forEach((it, idx) => {
+              const ratio = Math.max(1, (it.row.fr || '').length) / totalChars;
+              const next = idx === items.length - 1 ? spanEnd : cur + (spanEnd - spanStart) * ratio;
+              resolved[it.bIdx] = {
+                time: formatClockTime(cur),
+                start: Number(cur.toFixed(3)),
+                end: Number(next.toFixed(3)),
+                speaker: (it.row.speaker || '').trim(),
+                fr: (it.row.fr || '').trim(),
+                vi: (it.row.vi || '').trim(),
+                words: []
+              };
+              cur = next;
+            });
+          }
         });
+
+        currentTranscript = resolved.filter(Boolean);
       } else {
         const byIndex = {};
         parsed.forEach((row, idx) => {
@@ -1280,16 +1244,14 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         currentTranscript = baseTranscript.map((orig, idx) => {
           const aiRow = byIndex[idx];
           if (aiRow) {
-            const frText = (aiRow.fr || aiRow.text || orig.fr || orig.text || '').trim();
-            const viText = (aiRow.vi || '').trim();
             return {
               time: orig.time,
               start: orig.start,
               end: orig.end,
               speaker: (aiRow.speaker || orig.speaker || '').trim(),
-              fr: frText,
-              vi: viText,
-              subs: [{ start: orig.start, end: orig.end, text: frText, vi: viText }]
+              fr: (aiRow.fr || aiRow.text || orig.fr || orig.text || '').trim(),
+              vi: (aiRow.vi || '').trim(),
+              words: orig.words || []
             };
           }
           return orig;
@@ -1297,16 +1259,18 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       }
 
       activeIndex = -1;
-      activeSubIndex = -1;
+      renderedPairStart = -1;
+      lastActiveIndex = -1;
+      lastActiveEnd = -999;
       renderOverlayStructure();
       applySavedOverlayPosition();
       renderTranscriptList();
       syncSubtitle(true);
       if (isPinned) savePinnedSession();
-      statusEl.textContent = `✨ Đã áp dụng ${currentTranscript.length} lượt thoại song ngữ Karaoke${isPinned ? ' (đã cập nhật bản ghim)' : ''}!`;
+      statusEl.textContent = `✨ Đã áp dụng ${currentTranscript.length} câu song ngữ (hiển thị 2 câu/lượt, tô đậm 1 câu đang nói)${isPinned ? ' [đã lưu ghim]' : ''}.`;
     });
 
-    // --- TRÌNH PHÁT YOUTUBE & ĐỒNG BỘ KARAOKE ---
+    // --- TRÌNH PHÁT YOUTUBE & ĐỒNG BỘ 2 CÂU / TÔ ĐẬM 1 CÂU ---
     function loadYouTubeVideo(videoId, startSec = 0) {
       if (ytPlayer?.loadVideoById) {
         ytPlayer.loadVideoById({ videoId, startSeconds: Math.floor(startSec || 0) });
@@ -1342,6 +1306,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     function renderTranscriptList() {
       transcriptBox.innerHTML = '';
       currentTranscript.forEach((item, idx) => {
+        const fr = item.fr || item.text || '';
         const vi = item.vi || '';
         const div = document.createElement('div');
         div.className = 'line';
@@ -1350,15 +1315,11 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
           <span class="time">${item.time || item.start.toFixed(1) + 's'}</span>
           <div>
             ${item.speaker ? `<span class="speaker-badge">${escapeHtml(item.speaker)}</span>` : ''}
-            <div class="line-fr">${renderKaraokeFrHtml(item, `data-l-idx="${idx}"`)}</div>
-            ${vi ? `<div class="line-vi">${renderKaraokeViHtml(item, `data-l-idx="${idx}"`)}</div>` : ''}
+            <div class="line-fr">${escapeHtml(fr)}</div>
+            ${vi ? `<div class="line-vi">${escapeHtml(vi)}</div>` : ''}
           </div>
         `;
-        div.onclick = (e) => {
-          const kSpan = e.target.closest('.k-seg');
-          const targetTime = kSpan ? Number(kSpan.dataset.start) : item.start;
-          seekTo(targetTime);
-        };
+        div.onclick = () => seekTo(item.start);
         transcriptBox.appendChild(div);
       });
     }
@@ -1371,13 +1332,14 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       }
     }
 
-    function updateKaraokeHighlight(blockIdx, subIdx) {
-      document.querySelectorAll('.k-seg.active').forEach(el => el.classList.remove('active'));
-      if (blockIdx === -1 || subIdx === -1) return;
-
-      document.querySelectorAll(`#subtitleBox .k-seg[data-k="${subIdx}"]`).forEach(el => el.classList.add('active'));
-      document.querySelectorAll(`.k-seg[data-v-idx="${blockIdx}"][data-k="${subIdx}"]`).forEach(el => el.classList.add('active'));
-      document.querySelectorAll(`.k-seg[data-l-idx="${blockIdx}"][data-k="${subIdx}"]`).forEach(el => el.classList.add('active'));
+    function updatePairHighlightClasses(container, highlightedIdx) {
+      if (!container) return;
+      container.querySelectorAll('.sub-pair-line').forEach(el => {
+        const lineIdx = Number(el.dataset.pairIdx);
+        const active = (lineIdx === highlightedIdx);
+        el.classList.toggle('is-active', active);
+        el.classList.toggle('is-inactive', !active);
+      });
     }
 
     function syncSubtitle(forceRender = false) {
@@ -1388,46 +1350,44 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         savePinnedSession(currentTime);
       }
 
-      const idx = currentTranscript.findIndex(item => currentTime >= item.start && currentTime <= item.end);
-      const turnChanged = idx !== activeIndex || forceRender;
+      // Tìm đúng 1 câu đang nói dựa trên mốc thời gian mili-giây chuẩn
+      let idx = -1;
+      for (let i = 0; i < currentTranscript.length; i++) {
+        const item = currentTranscript[i];
+        const nextStart = i + 1 < currentTranscript.length ? currentTranscript[i + 1].start : Infinity;
+        const effectiveEnd = Math.min(item.end, nextStart > item.start ? nextStart - 0.001 : item.end);
+        if (currentTime >= item.start && currentTime <= effectiveEnd) {
+          idx = i;
+          break;
+        }
+      }
 
-      if (turnChanged) {
+      if (idx !== -1) {
+        lastActiveIndex = idx;
+        lastActiveEnd = currentTranscript[idx].end;
+      }
+
+      // Xác định cặp 2 câu hiển thị trên màn hình: [0,1], [2,3], [4,5]...
+      // Nếu đang ở khoảng nghỉ ngắn (< 1.2s) sau khi dứt câu trước, giữ nguyên cặp 2 câu trên màn hình và tắt tô đậm
+      let pairStartToRender = -1;
+      if (idx !== -1) {
+        pairStartToRender = Math.floor(idx / 2) * 2;
+      } else if (
+        lastActiveIndex !== -1 &&
+        currentTime > lastActiveEnd &&
+        currentTime <= lastActiveEnd + 1.2
+      ) {
+        pairStartToRender = Math.floor(lastActiveIndex / 2) * 2;
+      }
+
+      const activeChanged = idx !== activeIndex || forceRender;
+      const pairChanged = pairStartToRender !== renderedPairStart || forceRender;
+
+      if (activeChanged) {
         if (activeIndex !== -1) {
           document.getElementById('line-' + activeIndex)?.classList.remove('active');
-          document.getElementById('vsub-' + activeIndex)?.classList.remove('active');
         }
         activeIndex = idx;
-        activeSubIndex = -1;
-
-        if (subLayout === 'horizontal') {
-          const box = document.getElementById('subtitleBox');
-          if (box) {
-            if (idx !== -1) {
-              const item = currentTranscript[idx];
-              const fr = item.fr || item.text || '';
-              const vi = item.vi || '';
-              let html = '';
-              if (item.speaker) html += `<div class="speaker-badge">${escapeHtml(item.speaker)}</div>`;
-              if (showFr && fr) html += `<div class="sub-fr">${renderKaraokeFrHtml(item)}</div>`;
-              if (showVi && vi) html += `<div class="sub-vi">${renderKaraokeViHtml(item)}</div>`;
-              box.innerHTML = html;
-              if (customSubPos[getCurrentPosKey()]) {
-                clampOverlayInBounds();
-              }
-            } else {
-              box.innerHTML = '';
-            }
-          }
-        } else if (idx !== -1) {
-          const activeVSub = document.getElementById('vsub-' + idx);
-          const vSubList = document.getElementById('vSubList');
-          if (activeVSub && vSubList) {
-            activeVSub.classList.add('active');
-            const targetScroll = activeVSub.offsetTop - (vSubList.clientHeight / 2) + (activeVSub.clientHeight / 2);
-            vSubList.scrollTo({ top: Math.max(0, targetScroll), behavior: forceRender ? 'auto' : 'smooth' });
-          }
-        }
-
         if (idx !== -1) {
           const activeLine = document.getElementById('line-' + idx);
           if (activeLine) {
@@ -1437,15 +1397,37 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         }
       }
 
-      let subIdx = -1;
-      if (idx !== -1) {
-        const subs = currentTranscript[idx].subs || [];
-        subIdx = subs.findIndex(s => currentTime >= s.start && currentTime <= s.end);
-      }
+      if (subLayout === 'horizontal') {
+        const box = document.getElementById('subtitleBox');
+        if (!box) return;
 
-      if (turnChanged || subIdx !== activeSubIndex) {
-        activeSubIndex = subIdx;
-        updateKaraokeHighlight(idx, subIdx);
+        if (pairStartToRender === -1 || (!showFr && !showVi)) {
+          if (box.innerHTML !== '') box.innerHTML = '';
+          renderedPairStart = -1;
+        } else if (pairChanged) {
+          renderedPairStart = pairStartToRender;
+          box.innerHTML = buildTwoSentenceHtml(pairStartToRender, idx, false);
+          if (customSubPos[getCurrentPosKey()]) clampOverlayInBounds();
+        } else if (activeChanged) {
+          updatePairHighlightClasses(box, idx);
+        }
+      } else {
+        const vSubList = document.getElementById('vSubList');
+        if (!vSubList) return;
+
+        if (pairStartToRender === -1 || (!showFr && !showVi)) {
+          subtitleOverlay.classList.add('is-empty');
+          renderedPairStart = -1;
+        } else {
+          subtitleOverlay.classList.remove('is-empty');
+          if (pairChanged) {
+            renderedPairStart = pairStartToRender;
+            vSubList.innerHTML = buildTwoSentenceHtml(pairStartToRender, idx, true);
+            if (customSubPos[getCurrentPosKey()]) clampOverlayInBounds();
+          } else if (activeChanged) {
+            updatePairHighlightClasses(vSubList, idx);
+          }
+        }
       }
     }
 
@@ -1460,9 +1442,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         isPinned = true;
         currentVideoId = saved.videoId;
         baseTranscript = Array.isArray(saved.baseTranscript) ? saved.baseTranscript : [];
-        currentTranscript = prepareTranscriptKaraoke(
-          Array.isArray(saved.currentTranscript) ? saved.currentTranscript : []
-        );
+        currentTranscript = Array.isArray(saved.currentTranscript) ? saved.currentTranscript : [];
         subLayout = saved.subLayout || 'horizontal';
         showFr = saved.showFr !== undefined ? saved.showFr : true;
         showVi = saved.showVi !== undefined ? saved.showVi : true;
@@ -1486,13 +1466,13 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         populateExportBox(currentVideoId, baseTranscript);
         loadYouTubeVideo(currentVideoId, lastSavedTime);
 
-        statusEl.textContent = `📌 Đã khôi phục video đang ghim [${currentVideoId}] (${currentTranscript.length} dòng phụ đề).`;
+        statusEl.textContent = `📌 Đã khôi phục video đang ghim [${currentVideoId}] (${currentTranscript.length} câu).`;
       } catch (e) {
         console.warn('Lỗi đọc dữ liệu ghim:', e);
       }
     });
 
-    setInterval(syncSubtitle, 100);
+    setInterval(syncSubtitle, 35);
   </script>
 </body>
 </html>
