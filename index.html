@@ -379,8 +379,15 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
       margin-bottom: 6px;
       font-weight: 600;
+    }
+    .header-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
     }
     #status { color: #4caf50; font-size: 13px; line-height: 1.4; }
   </style>
@@ -431,9 +438,12 @@
     <div class="panel" style="margin-bottom:0;">
       <div class="box-header">
         <span>1. Prompt + Phụ đề gốc (Gửi AI)</span>
-        <button type="button" class="btn-blue" id="copyRawBtn">📋 Copy trọn bộ</button>
+        <div class="header-actions">
+          <button type="button" class="btn-blue" id="copyRawBtn">📋 Copy trọn bộ</button>
+          <button type="button" class="btn-teal" id="downloadTxtBtn">📥 Tải file .txt</button>
+        </div>
       </div>
-      <textarea id="exportBox" readonly placeholder="Sau khi bấm Phát ngay, Prompt kèm phụ đề gốc sẽ tự tạo ở đây..."></textarea>
+      <textarea id="exportBox" readonly placeholder="Sau khi bấm Phát ngay, Prompt kèm phụ đề gốc nén gọn sẽ tự tạo ở đây..."></textarea>
     </div>
 
     <div class="panel" style="margin-bottom:0;">
@@ -450,7 +460,7 @@
 
   <script>
     const AI_PROMPT = `Bạn là chuyên gia biên tập và dịch thuật phụ đề song ngữ Pháp - Việt cho video hội thoại.
-Dưới đây là link video và mảng JSON chứa bản chép lời tiếng Pháp kèm mốc thời gian.
+Dưới đây là link video và mảng JSON rút gọn chứa chỉ số dòng ("i") và lời thoại tiếng Pháp ("fr").
 
 NHIỆM VỤ CỦA BẠN:
 1. Gộp câu theo từng lượt nói / suy nghĩ của nhân vật:
@@ -848,12 +858,10 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       if (!/[.!?…]$/.test(stripped)) return false;
 
       if (stripped.endsWith('...')) {
-        // Nếu sau "..." là chữ thường thì vẫn là ngập ngừng giữa câu, không ngắt câu
         if (nextWord && /^[a-zà-ÿ]/.test(nextWord.replace(/^[«"“'(\[{]+/, ''))) return false;
         return true;
       }
       if (SENT_ABBREV_RE.test(stripped)) return false;
-      // Chữ cái viết tắt tên riêng (ví dụ: J. K. Rowling)
       if (/^[A-ZÀ-Ý]\.$/.test(stripped) && nextWord && /^[A-ZÀ-Ý]/.test(nextWord)) return false;
       return true;
     }
@@ -973,7 +981,6 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       const totalFrLen = frSentences.reduce((s, f) => s + Math.max(1, f.length), 0);
       const totalSubWeight = subRanges.reduce((s, r) => s + Math.max(1, r.weight || 1), 0);
 
-      // Tính tỷ lệ tích lũy của từng subRange để căn khớp chính xác ranh giới từng câu
       const cumSubRatios = [];
       let runW = 0;
       for (let j = 0; j < m; j++) {
@@ -1000,12 +1007,10 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         const targetRatio = cumFrLen / totalFrLen;
         const maxAllowedEnd = m - 1 - (n - 1 - k);
 
-        // Tìm vị trí subRange gần nhất với ranh giới câu
         let bestIdx = rStart;
         let bestDiff = Infinity;
         for (let j = rStart; j <= maxAllowedEnd; j++) {
           let diff = Math.abs(cumSubRatios[j] - targetRatio);
-          // Ưu tiên khớp đúng token có dấu kết câu (. ? ! …) nằm quanh ranh giới
           const tok = (subRanges[j].text || '').replace(/[»"”')\]}]+$/g, '');
           if (/[.!?…]$/.test(tok)) {
             diff -= 0.08;
@@ -1026,7 +1031,6 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         rStart = bestIdx + 1;
       }
 
-      // Nối liền khoảng lặng ngắn (< 0.65s) giữa các câu để câu trước giữ highlight cho tới khi câu sau bắt đầu
       for (let k = 0; k < result.length - 1; k++) {
         const gap = result[k + 1].start - result[k].end;
         if (gap >= 0 && gap < 0.65) {
@@ -1067,7 +1071,6 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         if (!Array.isArray(block.subs) || !block.subs.length) {
           block.subs = buildKaraokeSubs(fr, vi, [], block.start, block.end);
         } else if (frSentences.length > 1 && block.subs.length > frSentences.length) {
-          // Nâng cấp tự động dữ liệu ghim cũ (từng chữ) thành highlight toàn bộ từng câu
           const subRanges = block.subs.map(s => ({
             start: Number(s.start) || block.start,
             end: Number(s.end) || block.end,
@@ -1306,7 +1309,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     document.addEventListener('fullscreenchange', () => requestAnimationFrame(clampOverlayInBounds));
     document.addEventListener('webkitfullscreenchange', () => requestAnimationFrame(clampOverlayInBounds));
 
-    // --- TẠO PROMPT AI & ÁP DỤNG BẢN DỊCH ---
+    // --- TẠO PROMPT AI NÉN GỌN (~60% DUNG LƯỢNG), COPY & TẢI FILE .TXT ---
     function populateExportBox(vidId, lines) {
       if (!lines.length) {
         exportBox.value = '';
@@ -1314,16 +1317,13 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       }
       const compactLines = lines.map((line, idx) => ({
         i: idx,
-        time: line.time || '',
-        start: line.start,
-        end: line.end,
-        fr: line.fr || line.text || ''
+        fr: (line.fr || line.text || '').trim()
       }));
 
       exportBox.value =
         `${AI_PROMPT}\n` +
-        `Link video: https://www.youtube.com/watch?v=${vidId}\n\n` +
-        JSON.stringify(compactLines, null, 2);
+        `Link video: https://www.youtube.com/watch?v=${vidId}\n` +
+        JSON.stringify(compactLines);
     }
 
     document.getElementById('copyRawBtn').addEventListener('click', async () => {
@@ -1332,11 +1332,32 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
         await navigator.clipboard.writeText(exportBox.value);
       } catch {
         exportBox.select();
+        exportBox.setSelectionRange(0, exportBox.value.length);
         document.execCommand('copy');
       }
       const btn = document.getElementById('copyRawBtn');
       btn.textContent = '✓ Đã copy!';
       setTimeout(() => btn.textContent = '📋 Copy trọn bộ', 1800);
+    });
+
+    document.getElementById('downloadTxtBtn').addEventListener('click', () => {
+      if (!exportBox.value) {
+        alert('Chưa có dữ liệu phụ đề để tải xuống!');
+        return;
+      }
+      const blob = new Blob([exportBox.value], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `prompt_phu_de_${currentVideoId || 'youtube'}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+      const btn = document.getElementById('downloadTxtBtn');
+      btn.textContent = '✓ Đã tải!';
+      setTimeout(() => btn.textContent = '📥 Tải file .txt', 1800);
     });
 
     document.getElementById('applySubBtn').addEventListener('click', () => {
