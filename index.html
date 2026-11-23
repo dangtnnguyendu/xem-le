@@ -1,4 +1,4 @@
- "<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Xem Lẻ YouTube">
   <title>Xem Lẻ Video Song Ngữ Pháp - Việt</title>
   <style>
-- { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       max-width: 960px;
@@ -138,7 +138,7 @@
       margin-bottom: 1px;
     }
 
-    /* Hiệu ứng Karaoke: Mặc định trắng, đoạn đang nói bôi vàng đậm cho ngoại ngữ & đỏ cho tiếng Việt */
+    /* Hiệu ứng Karaoke: Mặc định trắng, câu đang nói bôi vàng đậm cho ngoại ngữ & đỏ cho tiếng Việt */
     .k-seg {
       color: #ffffff;
       transition: color 0.1s ease;
@@ -840,7 +840,46 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       return entries.filter(x => x.fr);
     }
 
-    // --- TÁCH CÂU PHÁP & VIỆT THÀNH CÁC PHÂN ĐOẠN KARAOKE ĐỒNG BỘ ---
+    // --- TÁCH CÂU PHÁP & VIỆT THÀNH TỪNG CÂU HOÀN CHỈNH ĐỂ HIGHLIGHT CẢ CÂU ---
+    const SENT_ABBREV_RE = /^(?:M|Mr|Mme|Mlle|Dr|Prof|St|Ste|Mgr|Me|etc|cf|ex|vol|p|pp|fig|chap|art|al|av|bd|env|max|min|tel|tél|n°|TP|ThS|TS|BS|PGS|GS|vd|tr)\.$/i;
+
+    function isSentenceTerminator(word, nextWord) {
+      const stripped = word.replace(/[»"”')\]}]+$/g, '');
+      if (!/[.!?…]$/.test(stripped)) return false;
+
+      if (stripped.endsWith('...')) {
+        // Nếu sau "..." là chữ thường thì vẫn là ngập ngừng giữa câu, không ngắt câu
+        if (nextWord && /^[a-zà-ÿ]/.test(nextWord.replace(/^[«"“'(\[{]+/, ''))) return false;
+        return true;
+      }
+      if (SENT_ABBREV_RE.test(stripped)) return false;
+      // Chữ cái viết tắt tên riêng (ví dụ: J. K. Rowling)
+      if (/^[A-ZÀ-Ý]\.$/.test(stripped) && nextWord && /^[A-ZÀ-Ý]/.test(nextWord)) return false;
+      return true;
+    }
+
+    function splitTextIntoSentences(fullText) {
+      const clean = (fullText || '').trim();
+      if (!clean) return [];
+      const tokens = clean.split(/\s+/).filter(Boolean);
+      if (tokens.length <= 1) return [clean];
+
+      const sentences = [];
+      let bucket = [];
+      for (let i = 0; i < tokens.length; i++) {
+        bucket.push(tokens[i]);
+        const nextTok = i + 1 < tokens.length ? tokens[i + 1] : '';
+        if (isSentenceTerminator(tokens[i], nextTok)) {
+          sentences.push(bucket.join(' '));
+          bucket = [];
+        }
+      }
+      if (bucket.length) {
+        sentences.push(bucket.join(' '));
+      }
+      return sentences.length ? sentences : [clean];
+    }
+
     function findNearestWordBoundary(text, targetPos, minPos) {
       if (targetPos <= minPos) return minPos;
       if (targetPos >= text.length) return text.length;
@@ -883,51 +922,138 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       return parts;
     }
 
+    function mapVietnameseToSentenceCount(cleanVi, frSentences) {
+      const targetCount = frSentences.length;
+      if (!cleanVi) return new Array(targetCount).fill('');
+      if (targetCount <= 1) return [cleanVi];
+
+      const viSentences = splitTextIntoSentences(cleanVi);
+      if (viSentences.length === targetCount) {
+        return viSentences;
+      }
+
+      if (viSentences.length > targetCount) {
+        const totalViLen = viSentences.reduce((s, v) => s + Math.max(1, v.length), 0);
+        const totalFrLen = frSentences.reduce((s, f) => s + Math.max(1, f.length), 0);
+        const buckets = [];
+        let vIdx = 0;
+        let cumFr = 0;
+        let cumVi = 0;
+
+        for (let k = 0; k < targetCount; k++) {
+          if (k === targetCount - 1) {
+            buckets.push(viSentences.slice(vIdx).join(' '));
+            break;
+          }
+          cumFr += Math.max(1, frSentences[k].length);
+          const targetViRatio = cumFr / totalFrLen;
+          const group = [];
+          while (vIdx < viSentences.length - (targetCount - 1 - k)) {
+            group.push(viSentences[vIdx]);
+            cumVi += Math.max(1, viSentences[vIdx].length);
+            vIdx++;
+            if (cumVi / totalViLen >= targetViRatio - 0.04) break;
+          }
+          buckets.push(group.join(' '));
+        }
+        return buckets;
+      }
+
+      const viWeights = frSentences.map(s => Math.max(1, s.length));
+      return splitTextIntoExactParts(cleanVi, viWeights);
+    }
+
+    function mapSubRangesToSentences(frSentences, subRanges, blockStart, blockEnd) {
+      const n = frSentences.length;
+      if (n <= 1 || !Array.isArray(subRanges) || subRanges.length === 0) {
+        return [{ start: blockStart, end: blockEnd, text: frSentences[0] || '' }];
+      }
+
+      const m = subRanges.length;
+      const totalFrLen = frSentences.reduce((s, f) => s + Math.max(1, f.length), 0);
+      const totalSubWeight = subRanges.reduce((s, r) => s + Math.max(1, r.weight || 1), 0);
+
+      // Tính tỷ lệ tích lũy của từng subRange để căn khớp chính xác ranh giới từng câu
+      const cumSubRatios = [];
+      let runW = 0;
+      for (let j = 0; j < m; j++) {
+        runW += Math.max(1, subRanges[j].weight || 1);
+        cumSubRatios.push(runW / totalSubWeight);
+      }
+
+      const result = [];
+      let rStart = 0;
+      let cumFrLen = 0;
+
+      for (let k = 0; k < n; k++) {
+        if (k === n - 1) {
+          const sTime = rStart < m ? subRanges[rStart].start : blockStart;
+          result.push({
+            start: Number(sTime.toFixed(2)),
+            end: Number(blockEnd.toFixed(2)),
+            text: frSentences[k]
+          });
+          break;
+        }
+
+        cumFrLen += Math.max(1, frSentences[k].length);
+        const targetRatio = cumFrLen / totalFrLen;
+        const maxAllowedEnd = m - 1 - (n - 1 - k);
+
+        // Tìm vị trí subRange gần nhất với ranh giới câu
+        let bestIdx = rStart;
+        let bestDiff = Infinity;
+        for (let j = rStart; j <= maxAllowedEnd; j++) {
+          let diff = Math.abs(cumSubRatios[j] - targetRatio);
+          // Ưu tiên khớp đúng token có dấu kết câu (. ? ! …) nằm quanh ranh giới
+          const tok = (subRanges[j].text || '').replace(/[»"”')\]}]+$/g, '');
+          if (/[.!?…]$/.test(tok)) {
+            diff -= 0.08;
+          }
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            bestIdx = j;
+          }
+        }
+
+        const sTime = subRanges[rStart].start;
+        const eTime = subRanges[bestIdx].end;
+        result.push({
+          start: Number(sTime.toFixed(2)),
+          end: Number(eTime.toFixed(2)),
+          text: frSentences[k]
+        });
+        rStart = bestIdx + 1;
+      }
+
+      // Nối liền khoảng lặng ngắn (< 0.65s) giữa các câu để câu trước giữ highlight cho tới khi câu sau bắt đầu
+      for (let k = 0; k < result.length - 1; k++) {
+        const gap = result[k + 1].start - result[k].end;
+        if (gap >= 0 && gap < 0.65) {
+          result[k].end = result[k + 1].start;
+        }
+      }
+
+      return result;
+    }
+
     function buildKaraokeSubs(frText, viText, subRanges, blockStart, blockEnd) {
       const cleanFr = (frText || '').trim();
       const cleanVi = (viText || '').trim();
       if (!cleanFr && !cleanVi) return [];
 
-      if (!Array.isArray(subRanges) || subRanges.length <= 1) {
+      const frSentences = splitTextIntoSentences(cleanFr);
+      if (frSentences.length <= 1) {
         return [{ start: blockStart, end: blockEnd, text: cleanFr, vi: cleanVi }];
       }
 
-      const weights = subRanges.map(s => Math.max(1, s.weight || 1));
-      const frRawParts = splitTextIntoExactParts(cleanFr, weights);
-      const mergedSubs = [];
+      const timedFr = mapSubRangesToSentences(frSentences, subRanges, blockStart, blockEnd);
+      const viParts = mapVietnameseToSentenceCount(cleanVi, frSentences);
 
-      for (let k = 0; k < subRanges.length; k++) {
-        const seg = subRanges[k];
-        const sliceFr = frRawParts[k] || '';
-
-        if (sliceFr || !cleanFr) {
-          mergedSubs.push({
-            start: Number(seg.start.toFixed(2)),
-            end: Number(seg.end.toFixed(2)),
-            text: sliceFr
-          });
-        } else if (mergedSubs.length > 0) {
-          mergedSubs[mergedSubs.length - 1].end = Number(seg.end.toFixed(2));
-        }
-      }
-
-      for (let k = 0; k < mergedSubs.length - 1; k++) {
-        if (mergedSubs[k + 1].start - mergedSubs[k].end < 0.35 && mergedSubs[k + 1].start >= mergedSubs[k].start) {
-          mergedSubs[k].end = mergedSubs[k + 1].start;
-        }
-      }
-
-      if (!mergedSubs.length) {
-        return [{ start: blockStart, end: blockEnd, text: cleanFr, vi: cleanVi }];
-      }
-
-      const viWeights = mergedSubs.map(s => (s.text || '').length || Math.max(0.1, s.end - s.start));
-      const viParts = splitTextIntoExactParts(cleanVi, viWeights);
-
-      return mergedSubs.map((s, idx) => ({
-        start: s.start,
-        end: s.end,
-        text: s.text,
+      return timedFr.map((seg, idx) => ({
+        start: seg.start,
+        end: seg.end,
+        text: seg.text,
         vi: viParts[idx] || ''
       }));
     }
@@ -936,8 +1062,19 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       list.forEach(block => {
         const fr = (block.fr || block.text || '').trim();
         const vi = (block.vi || '').trim();
+        const frSentences = splitTextIntoSentences(fr);
+
         if (!Array.isArray(block.subs) || !block.subs.length) {
-          block.subs = [{ start: block.start, end: block.end, text: fr, vi }];
+          block.subs = buildKaraokeSubs(fr, vi, [], block.start, block.end);
+        } else if (frSentences.length > 1 && block.subs.length > frSentences.length) {
+          // Nâng cấp tự động dữ liệu ghim cũ (từng chữ) thành highlight toàn bộ từng câu
+          const subRanges = block.subs.map(s => ({
+            start: Number(s.start) || block.start,
+            end: Number(s.end) || block.end,
+            weight: (s.text || '').length || 1,
+            text: s.text || ''
+          }));
+          block.subs = buildKaraokeSubs(fr, vi, subRanges, block.start, block.end);
         }
       });
       return list;
@@ -1247,12 +1384,13 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
             const origLine = baseTranscript[k];
             let s = origLine.start;
             let e = origLine.end;
-            let weight = (origLine.fr || origLine.text || '').length || 1;
+            const origText = (origLine.fr || origLine.text || '').trim();
+            let weight = origText.length || 1;
 
             if (k === fIdx && splitAtStart) { s = start; weight *= 0.5; }
             if (k === tIdx && splitAtEnd) { e = end; weight *= 0.5; }
             if (e < s) e = s;
-            subRanges.push({ start: s, end: e, weight });
+            subRanges.push({ start: s, end: e, weight, text: origText });
           }
 
           const frText = (row.fr || '').trim();
@@ -1289,7 +1427,7 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
               speaker: (aiRow.speaker || orig.speaker || '').trim(),
               fr: frText,
               vi: viText,
-              subs: [{ start: orig.start, end: orig.end, text: frText, vi: viText }]
+              subs: buildKaraokeSubs(frText, viText, [], orig.start, orig.end)
             };
           }
           return orig;
@@ -1303,10 +1441,10 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
       renderTranscriptList();
       syncSubtitle(true);
       if (isPinned) savePinnedSession();
-      statusEl.textContent = `✨ Đã áp dụng ${currentTranscript.length} lượt thoại song ngữ Karaoke${isPinned ? ' (đã cập nhật bản ghim)' : ''}!`;
+      statusEl.textContent = `✨ Đã áp dụng ${currentTranscript.length} lượt thoại song ngữ (highlight toàn bộ câu)${isPinned ? ' (đã cập nhật bản ghim)' : ''}!`;
     });
 
-    // --- TRÌNH PHÁT YOUTUBE & ĐỒNG BỘ KARAOKE ---
+    // --- TRÌNH PHÁT YOUTUBE & ĐỒNG BỘ KARAOKE THEO CÂU ---
     function loadYouTubeVideo(videoId, startSec = 0) {
       if (ytPlayer?.loadVideoById) {
         ytPlayer.loadVideoById({ videoId, startSeconds: Math.floor(startSec || 0) });
@@ -1495,4 +1633,4 @@ DỮ LIỆU VIDEO VÀ PHỤ ĐỀ THÔ CẦN XỬ LÝ:`;
     setInterval(syncSubtitle, 100);
   </script>
 </body>
-</html>"
+</html>
